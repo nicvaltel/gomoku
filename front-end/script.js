@@ -5,7 +5,7 @@ var StoneColor;
     StoneColor[StoneColor["White"] = 1] = "White";
 })(StoneColor || (StoneColor = {}));
 var gameConfig = {
-    socketUrl: 'ws://95.140.155.123:1234/ws',
+    socketUrl: 'ws://127.0.0.1:1234',
     htmlCanvasName: 'goBoard',
     backgroundPath: 'images/wood_full_original.jpg',
     whiteStonePath: 'images/white_00.png',
@@ -244,7 +244,30 @@ function gameLoopIO(allGameData) {
     allGameData = processGameLogic(allGameData);
     renderStateIO(allGameData, allGameData.canvases, allGameData.assets, allGameData.sizes, allGameData.inputData);
 }
+function sendMessageIO(ws, msg) {
+    // Wait until the state of the socket is not ready and send the message when it is...
+    waitForSocketConnectionIO(ws, function () {
+        console.log("message sent!!!");
+        ws.send(msg);
+    });
+}
+// Make the function wait until the connection is made...
+function waitForSocketConnectionIO(socket, callback) {
+    setTimeout(function () {
+        if (socket.readyState === 1) {
+            console.log("Connection is made");
+            if (callback != null) {
+                callback();
+            }
+        }
+        else {
+            console.log("wait for connection...");
+            waitForSocketConnectionIO(socket, callback);
+        }
+    }, 5); // wait 5 milisecond for the connection...
+}
 function startGameLoopIO(allGameData) {
+    sendMessageIO(allGameData.webSocket, 'Init');
     if (!allGameData.gameLoopId) {
         allGameData.gameLoopId = setInterval(function () {
             gameLoopIO(allGameData);

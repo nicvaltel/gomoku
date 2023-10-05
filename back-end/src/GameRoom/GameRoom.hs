@@ -67,3 +67,4 @@ class GameRoomRepo db where
   createGameRoomRepo :: IO db
   createGameRoom :: db -> AnyUserId -> GameType -> IO CreatedGameRoomId
   findUsersActiveRoom :: db -> IO [AnyUserId]
+  findActiveGameRoom :: db -> RoomId -> IO (Maybe (GameRoom 'GameInProgress))

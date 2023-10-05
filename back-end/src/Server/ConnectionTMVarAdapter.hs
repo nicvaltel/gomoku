@@ -59,6 +59,10 @@ instance ConnectionsRepo ConnectionRepoTMVar where
   userIdFromConnectionId :: ConnectionRepoTMVar -> ConnectionId -> IO (Maybe (UserId r))
   userIdFromConnectionId connRepo idConn = (fromAnyUserId . connStateUserId <$>) <$> lookupConnState connRepo idConn
 
+  anyUserIdFromConnectionId :: ConnectionRepoTMVar -> ConnectionId -> IO (Maybe AnyUserId)
+  anyUserIdFromConnectionId connRepo idConn = (connStateUserId <$>) <$> lookupConnState connRepo idConn
+
+
   getConnStatus :: ConnectionRepoTMVar -> ConnectionId -> IO ConnectionStatus
   getConnStatus tmvRepo idConn = do
     mbConn <- lookupConnState tmvRepo idConn

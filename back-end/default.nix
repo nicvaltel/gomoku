@@ -42,13 +42,18 @@ in
 
      shellHook = ''
          echo "Entering my Nix shell environment..."
-         # cd DB
-         # konsole -e 'docker-compose up' &
-         # cd ..
-         # konsole &
-         # konsole &
-         # dbeaver &
-         # code . &
+         cd DB
+         konsole -e 'docker-compose up' &
+         cd ..
+         konsole &
+         konsole &
+         dbeaver &
+         code . &
+
+         #!/usr/bin/env ./run_code.sh
+         # You can add any additional setup or configuration here
+         # For example, you can run your start.sh script:
+         # $myEnv/bin/bash $start.sh
      '';
 
 }

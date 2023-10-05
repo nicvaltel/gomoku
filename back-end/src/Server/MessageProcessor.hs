@@ -14,8 +14,9 @@ import Users.User
 import Utils.Utils
 import Network.WebSockets (Connection)
 import Server.WebSocketServerClass (WebSocketServer(..))
-import Server.Connection (ConnectionId, ConnectionsRepo (updateUserId, addConn), ConnectionStatus (CSNormal))
+import Server.Connection (ConnectionId, ConnectionsRepo (updateUserId, addConn, userIdFromConnectionId, anyUserIdFromConnectionId), ConnectionStatus (CSNormal))
 import Text.Printf (printf)
+import GameRoom.GameRoom (GameRoom(..), GameRoomRepo (findActiveGameRoom))
 
 
 userSessionLoginChanged :: (WebSocketServer wss c g u, ToAnyUserId r) => wss ->  ConnectionId -> UserId r -> IO ()
@@ -84,4 +85,16 @@ extractGameType = error "extractGameType not implemented"
 askForExistingUser :: Connection -> IO ()
 askForExistingUser conn = sendWebSocketOutputMessage conn AskForExistingUserOutMsg
 
-
+processAskForGameStateInMsg :: WebSocketServer wss c g u => wss -> Connection -> ConnectionId -> IO ()
+processAskForGameStateInMsg wss conn idConn = do
+          let connRepo = getConnRepo wss
+          mbUserId <- anyUserIdFromConnectionId connRepo idConn
+          case mbUserId of
+            Nothing -> logger LgError "Server.MessageProcessor processAskForGameStateInMsg: Revieved AskForGameStateInMsg from non existing user"
+            Just userId -> do
+              let gameRoomRepo = getGameRoomRepo wss
+              mbGameRoom <- findActiveGameRoom gameRoomRepo userId
+              case mbGameRoom of
+                Nothing -> sendWebSocketOutputMessage conn ReportGameStateNoGameOutMsg 
+                Just GameRoom{roomBoardState} -> sendWebSocketOutputMessage conn (ReportGameStateOutMsg roomBoardState)
+              pure undefined

@@ -9,11 +9,13 @@ DB/postgres/
 back-end/dist-newstyle/
 back-end/.stack-work/
 back-end/out/
-back-end/src/Pentest/
+back-end/back-end-exe
 back-end/run_deploy.sh
+back-end/src/HSPG
 
 front-end/go-assets/
 front-end/node_modules/
+front-end/script.js
 # front-end/.eslintrc.js
 # front-end/package.json
 # front-end/package-lock.json

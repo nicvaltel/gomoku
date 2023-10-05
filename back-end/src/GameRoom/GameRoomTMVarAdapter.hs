@@ -7,7 +7,7 @@ module GameRoom.GameRoomTMVarAdapter
   )
 where
 
-import Control.Concurrent.STM (TMVar, atomically, newTMVarIO, putTMVar, takeTMVar)
+import Control.Concurrent.STM (TMVar, atomically, newTMVarIO, putTMVar, takeTMVar, readTMVar)
 import Data.Map (Map)
 import qualified Data.Map.Strict as Map
 import GameLogic.GameLogic
@@ -36,4 +36,13 @@ instance GameRoomRepo GameRoomRepoTMVar where
           let newRepo = Map.insert anyUserId newRoom repo
           putTMVar tmvRepo newRepo
           pure (NewCreatedRoom anyUserId)
-        Just _ -> pure (AlreadyActiveRoom anyUserId) -- gameroom for current user is already active
+        Just _ -> do 
+          putTMVar tmvRepo repo
+          pure (AlreadyActiveRoom anyUserId) -- gameroom for current user is already active
+
+  findActiveGameRoom :: GameRoomRepoTMVar -> RoomId -> IO (Maybe (GameRoom 'GameInProgress))
+  findActiveGameRoom (GameRoomRepoTMVar (_, tmvRepo)) roomId = do
+     repo <- atomically $ readTMVar tmvRepo
+     case Map.lookup roomId repo of
+        Nothing -> pure Nothing
+        Just room -> pure (Just room) 

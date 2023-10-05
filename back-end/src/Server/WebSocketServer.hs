@@ -93,5 +93,6 @@ wsThreadMessageListener' wss conn idConn =
             Just userId -> processInitJoinRoom userId ijrMsg
         GameActionInMsg gameActMsg -> processGameActionMsg gameActMsg
         AnswerExistingUserInMsg uId -> processUpdateExistingUser wss idConn uId
+        AskForGameStateInMsg -> processAskForGameStateInMsg wss conn idConn
         IncorrectInMsg txt -> processIncorrectMsg conn txt
 

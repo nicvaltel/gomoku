@@ -35,5 +35,6 @@ class ConnectionsRepo db where
   removeConn :: db -> ConnectionId -> IO ()
   lookupConnState :: db -> ConnectionId -> IO (Maybe ConnectionState)
   userIdFromConnectionId :: db -> ConnectionId -> IO (Maybe (UserId r))
+  anyUserIdFromConnectionId :: db -> ConnectionId -> IO (Maybe AnyUserId)
   getConnStatus :: db -> ConnectionId -> IO ConnectionStatus
   nextAnonUserId :: db -> IO (UserId 'Anonim)

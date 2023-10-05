@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Server.Messages where
 
@@ -8,6 +9,7 @@ import qualified Data.Text as Text
 import GameRoom.GameRoom
 import Users.User (Password, Username, UserId (UserId), RegStatus (..))
 import Utils.Utils (tReadMaybe, tshow)
+import GameLogic.GameLogic (GameBoardState(..), StoneColor (..))
 
 type WSMsgFormat = Text
 
@@ -17,6 +19,7 @@ data WebSocketInputMessage
   | GameActionInMsg GameAction
   | IncorrectInMsg WSMsgFormat
   | AnswerExistingUserInMsg AnswerExistingUser
+  | AskForGameStateInMsg
   deriving (Show)
 
 data LogInOut = Login Username Password | Logout | Register Username Password
@@ -41,6 +44,9 @@ data WebSocketOutputMessage
   | LoginErrorOutMsg
   | LoginSuccessfullyOutMsg (UserId 'Registered)
   | LogoutSuccessfullyOutMsg (UserId 'Anonim)
+  | AskForGameStateOutMsg
+  | ReportGameStateNoGameOutMsg
+  | ReportGameStateOutMsg GameBoardState
 
 class WebSocketMSG a where
   toWebSocketInputMessage :: a -> WebSocketInputMessage
@@ -62,6 +68,7 @@ instance WebSocketMSG Text where
           ["Join", roomId] -> InitJoinRoomInMsg (JoinGameRoom roomId)
           ("GameAct" : params) -> GameActionInMsg (GameAction params)
           ("AnswerExistingUser" : rest) -> maybeToWSIM $ toWSIMAnswerExistingUser rest
+          ["AskForGameStateInMsg"] -> AskForGameStateInMsg
           _ -> IncorrectInMsg txt
       where
         maybeToWSIM :: Maybe WebSocketInputMessage-> WebSocketInputMessage
@@ -76,6 +83,16 @@ instance WebSocketMSG Text where
   fromWebSocketOutputMessage LoginErrorOutMsg = "LoginError"
   fromWebSocketOutputMessage (LoginSuccessfullyOutMsg (UserId uId)) = "LoginSuccessfullyMsg;" <> tshow uId
   fromWebSocketOutputMessage (LogoutSuccessfullyOutMsg (UserId uId)) = "LogoutSuccessfullyMsg;" <> tshow uId
+  fromWebSocketOutputMessage AskForGameStateOutMsg = "AskForGameState"
+  fromWebSocketOutputMessage ReportGameStateNoGameOutMsg = "ReportGameStateNoGameOutMsg"
+  fromWebSocketOutputMessage (ReportGameStateOutMsg GameBoardState{gbsCurrentMoveColor, gbsCurrentMoveNumber, gbsBoardMatrix, gbsLastStone }) = 
+    "ReportGameState;" <> 
+    tshow gbsCurrentMoveColor <> ";" 
+    <> tshow gbsCurrentMoveNumber <> ";" <> 
+    Text.pack (concat [ concat [ case col of Nothing -> "." ; Just Black -> "0" ; Just White -> "1"  | col <- row] ++ "|" | row <- gbsBoardMatrix ] ++ ";") <>
+    maybe "" (\(r,c) -> tshow r <> "," <> tshow c) gbsLastStone
+
+  
 
 
 

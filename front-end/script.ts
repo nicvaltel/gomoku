@@ -18,7 +18,7 @@ interface GameConfig {
 }
 
 const gameConfig: GameConfig = {
-    socketUrl: 'ws://95.140.155.123:1234/ws', // 'ws://127.0.0.1:1234',
+    socketUrl: 'ws://127.0.0.1:1234', // 'ws://95.140.155.123:1234/ws',
     htmlCanvasName: 'goBoard',
     backgroundPath: 'images/wood_full_original.jpg',
     whiteStonePath: 'images/white_00.png',
@@ -375,7 +375,34 @@ function gameLoopIO(allGameData: AllGameData): void {
     renderStateIO(allGameData, allGameData.canvases, allGameData.assets, allGameData.sizes, allGameData.inputData);
 }
 
+function sendMessageIO(ws: WebSocket, msg : string){
+    // Wait until the state of the socket is not ready and send the message when it is...
+    waitForSocketConnectionIO(ws, function(){
+        console.log("message sent!!!");
+        ws.send(msg);
+    });
+}
+
+// Make the function wait until the connection is made...
+function waitForSocketConnectionIO(socket : WebSocket, callback : () => void){
+    setTimeout(
+        function () {
+            if (socket.readyState === 1) {
+                console.log("Connection is made")
+                if (callback != null){
+                    callback();
+                }
+            } else {
+                console.log("wait for connection...")
+                waitForSocketConnectionIO(socket, callback);
+            }
+        }, 5); // wait 5 milisecond for the connection...
+}
+
 function startGameLoopIO(allGameData: AllGameData): void {
+
+    sendMessageIO(allGameData.webSocket,'Init')
+
     if (!allGameData.gameLoopId) {
         allGameData.gameLoopId = setInterval(() => {
             gameLoopIO(allGameData);
