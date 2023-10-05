@@ -1,0 +1,19 @@
+*.env
+*~
+
+_dependency_fork/postgresql-simple-migration/dist-newstyle/
+_dependency_fork/postgresql-simple-migration/src/Main
+
+DB/postgres/
+
+back-end/dist-newstyle/
+back-end/.stack-work/
+back-end/out/
+back-end/src/Pentest/
+back-end/run_deploy.sh
+
+front-end/go-assets/
+front-end/node_modules/
+# front-end/.eslintrc.js
+# front-end/package.json
+# front-end/package-lock.json
