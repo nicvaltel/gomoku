@@ -14,11 +14,12 @@ in
   pkgs.stdenv.mkDerivation {
     name = "env";
     buildInputs =  [
-      pkgs.postgresql
+      pkgs.tree # show files in directory as tree
+      
       pkgs.dbeaver
       pkgs.glibc
-      pkgs.docker
-      pkgs.docker-compose
+      # pkgs.docker
+      # pkgs.docker-compose
       pkgs.websocat # Websocat is a command-line utility that can help you test WebSocket connections
 
       compiler.stack
@@ -26,6 +27,7 @@ in
       compiler.ghcid
       compiler.haskell-language-server
       compiler.ghcide
+      pkgs.postgresql # needs for postgresql-simple-migration
 
       pkgs.ormolu
       pkgs.hpack
@@ -36,17 +38,23 @@ in
 
       pkgs.go
       pkgs.gopls # Official language server for the Go language
-      
-      # # pkgs.haskellPackages.postgresql-simple-migration
     ];
 
+
+#     virtualisation.docker.enable = true;
+#     users.users.kolay = {
+#       isNormalUser = true;
+#       home = "/home/kolay";
+#       extraGroups = [ "wheel" "networkmanager" "vboxusers" "docker" "audio"]; # "wheel" Enable ‘sudo’ for the user.
+#     };
+
      shellHook = ''
-         echo "Entering my Nix shell environment..."
+         # echo "Entering my Nix shell environment..."
          # cd DB
-         # konsole -e 'docker-compose up' &
+         # term -e 'docker-compose up' &
          # cd ..
-         # konsole &
-         # konsole &
+         # term &
+         # term &
          # dbeaver &
          # code . &
      '';

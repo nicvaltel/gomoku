@@ -24,28 +24,6 @@ source-repository head
   location: https://github.com/githubuser/back-end
 
 library
-  exposed-modules:
-      GameLogic.GameLogic
-      GameRoom.GameRoom
-      GameRoom.GameRoomTMVarAdapter
-      HSPG.DataKindsPg
-      HSPG.TypeToString
-      HSPG.TypeToString2
-      IntMapRepo
-      PostgreSQLConnector
-      RunApp
-      Server.Connection
-      Server.ConnectionTMVarAdapter
-      Server.GamesList
-      Server.MessageProcessor
-      Server.Messages
-      Server.WebSocketServer
-      Server.WebSocketServerClass
-      Server.WebSocketServerImpl
-      Types
-      Users.User
-      Users.UserPostgresAdapter
-      Utils.Utils
   other-modules:
       Paths_back_end
   hs-source-dirs:
