@@ -24,6 +24,20 @@ source-repository head
   location: https://github.com/githubuser/back-end
 
 library
+  exposed-modules:
+      Adapter.InMemory.ConnectionsMem
+      Adapter.InMemory.UsersMem
+      Domain.Connection
+      Domain.GameLogic
+      Domain.Room
+      Domain.Types
+      Domain.User
+      Domain.WebSocketServer
+      HSPG.HSPG
+      HSPG.TVarPG
+      Lib
+      RunApp
+      Utils.Utils
   other-modules:
       Paths_back_end
   hs-source-dirs:
