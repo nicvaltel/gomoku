@@ -12,7 +12,7 @@ type Password = Text
 data RegStatus = Registered | Anonim
   deriving (Show, Eq, Ord)
 
-newtype UserId (r :: RegStatus) = UserId Int
+newtype UserId (r :: RegStatus) = UserId {unUserId :: Int}
   deriving (Show, Eq, Ord)
 
 type AnyUserId = Either (UserId 'Anonim) (UserId 'Registered)

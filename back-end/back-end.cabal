@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Adapter.InMemory.ConnectionsMem
+      Adapter.InMemory.RoomsMem
       Adapter.InMemory.UsersMem
       Domain.Connection
       Domain.GameLogic
@@ -37,6 +38,7 @@ library
       HSPG.TVarPG
       Lib
       RunApp
+      Utils.IntMapRepo
       Utils.Utils
   other-modules:
       Paths_back_end

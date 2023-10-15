@@ -35,7 +35,7 @@ import Utils.Utils (tshow)
 
 type UsersDB = TVar UsersIntMap
 
-type InMemory reader m = (Has (TVar UsersIntMap) reader, MonadReader reader m, MonadIO m)
+type InMemory reader m = (Has UsersDB reader, MonadReader reader m, MonadIO m)
 
 addRegUser :: InMemory reader m => Username -> Password -> m (Maybe (UserId 'Registered)) -- TODO save hashed password
 addRegUser username password = do

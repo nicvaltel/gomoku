@@ -7,7 +7,7 @@ data StoneColor = Black | White
   deriving (Show, Eq, Ord)
 
 data GameBoardState = GameBoardState
-  { gbsCurrentMoveColor :: StoneColor,
+  { gbsCurrentMoveColor :: StoneColor, 
     gbsCurrentMoveNumber :: Int,
     gbsBoardMatrix :: [[Maybe StoneColor]],
     gbsLastStone :: Maybe (Int, Int)
