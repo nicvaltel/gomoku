@@ -1,4 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Domain.GameLogic where
+import Data.Text.Lazy (Text)
 
 data GameMove = GameMove
   deriving (Show, Eq, Ord)
@@ -14,7 +17,7 @@ data GameBoardState = GameBoardState
   }
   deriving (Show, Eq, Ord)
 
-data GameResult = GameResult
+data GameResult = Unfinished | GameResult
   deriving (Show, Eq, Ord)
 
 data GameType = GameType
@@ -28,3 +31,13 @@ newGameBoardState _ =
       gbsBoardMatrix = [[]],
       gbsLastStone = Nothing
     }
+
+indexOfGameTypeId :: GameType -> Int
+indexOfGameTypeId GameType = 1
+
+gameBoardStateToText :: GameBoardState -> Text
+gameBoardStateToText _ = "GameBoardState" -- TODO implement
+
+gameResultToText :: GameResult -> Text
+gameResultToText Unfinished = "Unfinished" -- TODO implement
+gameResultToText GameResult = "GameResult"

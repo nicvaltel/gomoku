@@ -33,8 +33,8 @@ emptyRoomDB = do
   roomDBFinished <- newTVarIO IntMapRepo.empty
   pure RoomsDB {roomDBLobby, roomDBActive, roomDBFinished}
 
-createRoom :: InMemory reader m => AnyUserId -> GameType -> m (DR.Room 'DR.LobbyRoom, DR.RoomId 'DR.LobbyRoom)
-createRoom anyUserId gameType = do
+createLobbyRoom :: InMemory reader m => AnyUserId -> GameType -> m (DR.Room 'DR.LobbyRoom, DR.RoomId 'DR.LobbyRoom)
+createLobbyRoom anyUserId gameType = do
   let newRoom = DR.mkNewRoom anyUserId gameType
   tvar <- asks (roomDBLobby . getter)
   liftIO $ atomically $ do
@@ -85,16 +85,16 @@ findActiveRoomById (DR.RoomId rId) = do
   activeRooms :: RoomsIntMap 'DR.ActiveRoom <- liftIO $ readTVarIO tvar
   pure $ IntMapRepo.findById activeRooms rId
 
-archiveRoom :: InMemory reader m => DR.RoomId 'DR.ActiveRoom -> m (Maybe (DR.Room 'DR.FinishedRoom, DR.RoomId 'DR.FinishedRoom))
-archiveRoom roomId = do
-  mbActiveRoom <- findActiveRoomById roomId
-  case mbActiveRoom of
-    Just activeRoom -> do
-      let newFinishedRoom = DR.activeRoomToFinished activeRoom
-      tvarFinished <- asks (roomDBFinished . getter)
-      liftIO $ atomically $ do
-        finishedRooms :: RoomsIntMap 'DR.FinishedRoom <- readTVar tvarFinished
-        let (newFinishedRooms, newFinishedRoomId) = IntMapRepo.add finishedRooms newFinishedRoom
-        writeTVar tvarFinished newFinishedRooms
-        pure $ Just (newFinishedRoom, DR.RoomId newFinishedRoomId)
-    Nothing -> pure Nothing
+-- archiveRoom :: InMemory reader m => DR.RoomId 'DR.ActiveRoom -> m (Maybe (DR.Room 'DR.FinishedRoom, DR.RoomId 'DR.FinishedRoom))
+-- archiveRoom roomId = do
+--   mbActiveRoom <- findActiveRoomById roomId
+--   case mbActiveRoom of
+--     Just activeRoom -> do
+--       let newFinishedRoom = DR.activeRoomToFinished activeRoom
+--       tvarFinished <- asks (roomDBFinished . getter)
+--       liftIO $ atomically $ do
+--         finishedRooms :: RoomsIntMap 'DR.FinishedRoom <- readTVar tvarFinished
+--         let (newFinishedRooms, newFinishedRoomId) = IntMapRepo.add finishedRooms newFinishedRoom
+--         writeTVar tvarFinished newFinishedRooms
+--         pure $ Just (newFinishedRoom, DR.RoomId newFinishedRoomId)
+--     Nothing -> pure Nothing

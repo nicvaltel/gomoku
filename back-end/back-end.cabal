@@ -28,6 +28,8 @@ library
       Adapter.InMemory.ConnectionsMem
       Adapter.InMemory.RoomsMem
       Adapter.InMemory.UsersMem
+      Adapter.PostgreSQL.RoomsDB
+      Adapter.PostgreSQL.UsersDB
       Domain.Connection
       Domain.GameLogic
       Domain.Room
@@ -37,7 +39,9 @@ library
       HSPG.HSPG
       HSPG.TVarPG
       Lib
+      PostgreSQLConnector
       RunApp
+      TestLib
       Utils.IntMapRepo
       Utils.Utils
   other-modules:
