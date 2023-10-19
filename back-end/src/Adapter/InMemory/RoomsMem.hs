@@ -5,7 +5,16 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Adapter.InMemory.RoomsMem where
+module Adapter.InMemory.RoomsMem (
+  RoomsDB,
+  emptyRoomDB,
+  createLobbyRoom,
+  findLobbyRoomById,
+  updateLobbyRoom,
+  deleteLobbyRoom,
+  runActiveRoom,
+  findActiveRoomById
+) where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Monad.RWS (MonadIO (liftIO), MonadReader, asks)
@@ -84,17 +93,3 @@ findActiveRoomById (DR.RoomId rId) = do
   tvar <- asks (roomDBActive . getter)
   activeRooms :: RoomsIntMap 'DR.ActiveRoom <- liftIO $ readTVarIO tvar
   pure $ IntMapRepo.findById activeRooms rId
-
--- archiveRoom :: InMemory reader m => DR.RoomId 'DR.ActiveRoom -> m (Maybe (DR.Room 'DR.FinishedRoom, DR.RoomId 'DR.FinishedRoom))
--- archiveRoom roomId = do
---   mbActiveRoom <- findActiveRoomById roomId
---   case mbActiveRoom of
---     Just activeRoom -> do
---       let newFinishedRoom = DR.activeRoomToFinished activeRoom
---       tvarFinished <- asks (roomDBFinished . getter)
---       liftIO $ atomically $ do
---         finishedRooms :: RoomsIntMap 'DR.FinishedRoom <- readTVar tvarFinished
---         let (newFinishedRooms, newFinishedRoomId) = IntMapRepo.add finishedRooms newFinishedRoom
---         writeTVar tvarFinished newFinishedRooms
---         pure $ Just (newFinishedRoom, DR.RoomId newFinishedRoomId)
---     Nothing -> pure Nothing

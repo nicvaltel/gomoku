@@ -49,10 +49,10 @@ in
 #     };
 
      shellHook = ''
-         # echo "Entering my Nix shell environment..."
-         # cd DB
-         # term -e 'docker-compose up' &
-         # cd ..
+         echo "Entering my Nix shell environment..."
+         cd DB
+         term -e 'docker-compose up' &
+         cd ..
          # term &
          # term &
          # dbeaver &

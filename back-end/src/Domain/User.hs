@@ -1,9 +1,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Domain.User where
 
 import Data.Text (Text)
+import GHC.Generics (Generic)
+import Data.Aeson (FromJSON)
+import Data.Aeson.Types (ToJSON)
 
 type Username = Text
 
@@ -13,7 +17,7 @@ data RegStatus = Registered | Anonim
   deriving (Show, Eq, Ord)
 
 newtype UserId (r :: RegStatus) = UserId {unUserId :: Int}
-  deriving (Show, Eq, Ord)
+  deriving (Show, Generic, Eq, Ord)
 
 type AnyUserId = Either (UserId 'Anonim) (UserId 'Registered)
 
@@ -39,3 +43,6 @@ instance GetRegStatus 'Registered where
 
 instance GetRegStatus 'Anonim where
   getRegStatus _ = Anonim
+
+instance FromJSON (UserId s)
+instance ToJSON (UserId s)

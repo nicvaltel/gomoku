@@ -6,7 +6,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Adapter.PostgreSQL.RoomsDB where
+module Adapter.PostgreSQL.RoomsDB (
+  archiveRoom,
+  archiveAnonRoom,
+  archiveRegisteredRoom
+) where
 
 import Control.Monad.RWS (MonadIO (liftIO), MonadReader, asks)
 import Data.Has (Has (getter))

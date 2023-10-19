@@ -4,13 +4,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Adapter.PostgreSQL.UsersDB where
+module Adapter.PostgreSQL.UsersDB ( addRegUserToDB, checkPassword) where
 
 import Control.Monad.RWS (MonadIO (liftIO), MonadReader, asks)
 import Data.Has (Has (getter))
 import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection, Only (Only), query)
-import Domain.User
+import Domain.User hiding (addRegUserToDB, checkPassword)
 import qualified PostgreSQLConnector as PG
 
 type InPostgres reader m = (Has (Pool Connection) reader, MonadReader reader m, MonadIO m)

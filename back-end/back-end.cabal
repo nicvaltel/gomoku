@@ -32,6 +32,8 @@ library
       Adapter.PostgreSQL.UsersDB
       Domain.Connection
       Domain.GameLogic
+      Domain.MessagesInput
+      Domain.MessagesOutput
       Domain.Room
       Domain.Types
       Domain.User
@@ -39,6 +41,7 @@ library
       HSPG.HSPG
       HSPG.TVarPG
       Lib
+      Params
       PostgreSQLConnector
       RunApp
       TestLib
@@ -50,7 +53,8 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      async
+      aeson
+    , async
     , base >=4.7 && <5
     , bytestring
     , containers
@@ -81,7 +85,8 @@ executable back-end-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
+      aeson
+    , async
     , back-end
     , base >=4.7 && <5
     , bytestring
@@ -115,7 +120,8 @@ test-suite back-end-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
+      aeson
+    , async
     , back-end
     , base >=4.7 && <5
     , bytestring
