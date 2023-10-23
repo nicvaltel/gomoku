@@ -21,7 +21,11 @@ data GameBoardState = GameBoardState
 data GameResult = Unfinished | GameResult
   deriving (Show, Eq, Ord)
 
-data GameType = GameType
+type GameTime = String
+
+type GameMode = String
+
+data GameType = GameType {gameTypeTime :: GameTime, gameTypeMode :: GameMode}
   deriving (Show, Eq, Ord)
 
 newGameBoardState :: GameType -> GameBoardState
@@ -34,7 +38,7 @@ newGameBoardState _ =
     }
 
 indexOfGameTypeId :: GameType -> Int
-indexOfGameTypeId GameType = 1
+indexOfGameTypeId (GameType _ _) = 1
 
 gameBoardStateToText :: GameBoardState -> Text
 gameBoardStateToText _ = "GameBoardState" -- TODO implement

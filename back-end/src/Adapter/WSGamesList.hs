@@ -1,103 +1,46 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module Adapter.WSGamesList
-  ( runWSGamesList,
+  ( wssGamesList,
+    getLobbyGamesList,
   )
 where
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (async)
-import Control.Concurrent.STM (STM, atomically)
-import Control.Concurrent.STM.TMVar
-  ( TMVar,
-    newEmptyTMVarIO,
-    putTMVar,
-    readTMVar,
-    tryTakeTMVar,
-  )
-import Control.Monad (forever, replicateM)
-import Data.Char (toUpper)
-import Data.Text (Text)
-import qualified Data.Text as Text
+import Control.Monad (forever)
+import Control.Monad.Cont (MonadIO (liftIO))
+import Data.Aeson (encode)
+import Domain.Connection (ConnectionsRepo)
+import qualified Domain.GameLogic as DGL
+import Domain.Room (Room (roomCreatorUsername, roomGameType), RoomsRepo (..))
+import Domain.Types
+import Domain.User (UsersRepo)
+import qualified Domain.User as DU
 import qualified Network.WebSockets as WS
-import System.Random (randomRIO)
 
-data GameVariant = GameVariant
-  { gameVarPlayer :: String,
-    gameVarRating :: Int,
-    gameVarTime :: String,
-    gameVarMode :: String
-  }
-  deriving (Show)
+type WSSApp m = (MonadIO m, UsersRepo m, ConnectionsRepo m, RoomsRepo m)
 
-newtype ListOfGames = ListOfGames [GameVariant]
-  deriving (Show)
+wssGamesList :: WSSApp m => PingTime -> (WS.PendingConnection -> m ())
+wssGamesList pingTime pending = do
+  conn <- liftIO $ WS.acceptRequest pending
+  sender <- lobbySender conn
+  liftIO $
+    WS.withPingThread conn pingTime (return ()) $
+      pure sender
 
-gameVarToText :: GameVariant -> Text
-gameVarToText GameVariant {gameVarPlayer, gameVarRating, gameVarTime, gameVarMode} =
-  Text.pack gameVarPlayer
-    <> ";"
-    <> Text.pack (show gameVarRating)
-    <> ";"
-    <> Text.pack gameVarTime
-    <> ";"
-    <> Text.pack gameVarMode
+getLobbyGamesList :: WSSApp m => m [(DU.Username, DGL.GameType)]
+getLobbyGamesList =
+  map (\(room, _) -> (roomCreatorUsername room, roomGameType room)) <$> getLobbyRoomsList
 
-lgToText :: ListOfGames -> Text
-lgToText (ListOfGames gs) = Text.intercalate "\n" (gameVarToText <$> gs)
-
-application :: TMVar ListOfGames -> WS.ServerApp
-application gamesListTMVar = \pending -> do
-  conn <- WS.acceptRequest pending
-  WS.withPingThread conn 30 (return ()) $ do
-    forever $ do
-      gamesList <- atomically $ readTMVar gamesListTMVar
-      WS.sendTextData conn (lgToText gamesList)
-      threadDelay 500_000
-
-messageGenerator :: TMVar ListOfGames -> IO ()
-messageGenerator tmvListOfGames = forever $ do
-  let numStrings = 20
-  randomGameVariants <- generateRandomGameVariants numStrings
-  atomically $ writeTMVar tmvListOfGames $ ListOfGames randomGameVariants
-  threadDelay 100_000
-  where
-    generateRandomGameVariants :: Int -> IO [GameVariant]
-    generateRandomGameVariants numStrings =
-      replicateM numStrings randomGameVar
-
-    randomGameVar :: IO GameVariant
-    randomGameVar = do
-      gameVarPlayer <- do
-        (h : rest) <- randomString 10
-        pure (toUpper h : rest)
-      gameVarRating <- randomRIO (20, 99)
-      gameVarTime <- do
-        (m :: Int) <- randomRIO (3, 15)
-        (s :: Int) <- randomRIO (0, 10)
-        pure $ show m ++ "+" ++ show s
-      gameVarMode <- do
-        (n :: Int) <- randomRIO (0, 1)
-        case n of
-          0 -> pure "Casual"
-          1 -> pure "Rated"
-          _ -> pure "..."
-      pure GameVariant {gameVarPlayer, gameVarRating, gameVarTime, gameVarMode}
-
-    randomString :: Int -> IO String
-    randomString len = replicateM len randomChar
-
-    randomChar = randomRIO ('a', 'z')
-
-writeTMVar :: TMVar a -> a -> STM ()
-writeTMVar t new = tryTakeTMVar t >> putTMVar t new
-
-runWSGamesList :: String -> Int -> IO ()
-runWSGamesList address portNum = do
-  gamesListTMVar <- newEmptyTMVarIO
-  _ <- async $ messageGenerator gamesListTMVar
-  putStrLn $ "Websocket server at " ++ address ++ ":" ++ show portNum
-  WS.runServer address portNum $ application gamesListTMVar
+lobbySender :: WSSApp m => WS.Connection -> m ()
+lobbySender conn = forever $ do
+  lobbyList <- getLobbyGamesList
+  let lobbyMsg = map (\(username, gtype) -> (username, DGL.gameTypeTime gtype, DGL.gameTypeMode gtype)) lobbyList
+  let message = encode lobbyMsg
+  liftIO $ WS.sendTextData conn message
+  liftIO $ threadDelay 500_000

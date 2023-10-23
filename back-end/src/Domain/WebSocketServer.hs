@@ -2,8 +2,10 @@ module Domain.WebSocketServer where
 
 import Data.Text (Text)
 import Domain.Connection
+import qualified Domain.GameLogic as DGL
 import Domain.MessagesInput
 import Domain.Types
+import qualified Domain.User as DU
 import qualified Network.WebSockets as WS
 
 class Monad m => WebSocketServer m where
@@ -15,6 +17,10 @@ class Monad m => WebSocketServer m where
   processInputGameAction :: ConnId -> ConnState -> GameAction -> m ()
   processInputIncorrect :: ConnId -> ConnState -> Text -> m ()
   processInputAnswerExistingUser :: ConnId -> ConnState -> AnswerExistingUser -> m ()
+
+class Monad m => WSGamesList m where
+  wssGamesList :: PingTime -> WS.PendingConnection -> m ()
+  getLobbyGamesList :: m [(DU.Username, DGL.GameType)]
 
 -- runwebSocketServerApp :: Host -> Port -> PingTime -> Pool Connection -> IO ()
 -- runwebSocketServerApp host port pingTime poolConn = do

@@ -11,7 +11,7 @@ import Domain.GameLogic (GameType(..))
 import Data.Maybe (fromJust)
 
 
-testUser :: LibRepos.App (UserId 'Registered)
+testUser :: LibRepos.App (UserId 'Registered, Username)
 testUser = do
     mbUserId <- addRegUser "Vasyan2" "Bubu112233"
     let userId = fromJust mbUserId
@@ -20,12 +20,12 @@ testUser = do
     ch2 <- checkPassword userId "Bubu"
     liftIO $ print ch1
     liftIO $ print ch2
-    pure userId
+    pure (userId,"Vasyan2")
 
 
-testRoom :: UserId 'Registered -> LibRepos.App ()
-testRoom userId = do
-    (roomLobby, roomLobbyId) <- createLobbyRoom (Right userId) GameType
+testRoom :: UserId 'Registered -> Username -> LibRepos.App ()
+testRoom userId username = do
+    (roomLobby, roomLobbyId) <- createLobbyRoom (Right userId) username (GameType "10+5" "Casual")
     mbActive <- runActiveRoom roomLobbyId
     let (roomActive, roomActiveId) = fromJust mbActive
     mbFinished <- archiveRoom roomActiveId
@@ -36,5 +36,5 @@ testRoom userId = do
 
 testAll :: LibRepos.App ()
 testAll = do
-    userId <- testUser
-    testRoom userId
+    (userId, username) <- testUser
+    testRoom userId username

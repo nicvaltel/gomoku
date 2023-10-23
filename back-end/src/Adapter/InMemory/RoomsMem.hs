@@ -14,12 +14,14 @@ module Adapter.InMemory.RoomsMem
     deleteLobbyRoom,
     runActiveRoom,
     findActiveRoomById,
+    getLobbyRoomsList,
   )
 where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Monad.RWS (MonadIO (liftIO), MonadReader, asks)
 import Data.Has (Has (getter))
+import qualified Data.IntMap.Strict as IntMap
 import Domain.GameLogic
 import qualified Domain.Room as DR
 import Domain.User
@@ -43,9 +45,9 @@ emptyRoomDB = do
   roomDBFinished <- newTVarIO IntMapRepo.empty
   pure RoomsDB {roomDBLobby, roomDBActive, roomDBFinished}
 
-createLobbyRoom :: InMemory reader m => AnyUserId -> GameType -> m (DR.Room 'DR.LobbyRoom, DR.RoomId 'DR.LobbyRoom)
-createLobbyRoom anyUserId gameType = do
-  let newRoom = DR.mkNewRoom anyUserId gameType
+createLobbyRoom :: InMemory reader m => AnyUserId -> Username -> GameType -> m (DR.Room 'DR.LobbyRoom, DR.RoomId 'DR.LobbyRoom)
+createLobbyRoom anyUserId username gameType = do
+  let newRoom = DR.mkNewRoom anyUserId username gameType
   tvar <- asks (roomDBLobby . getter)
   liftIO $ atomically $ do
     lobbyRooms :: RoomsIntMap 'DR.LobbyRoom <- readTVar tvar
@@ -94,3 +96,9 @@ findActiveRoomById (DR.RoomId rId) = do
   tvar <- asks (roomDBActive . getter)
   activeRooms :: RoomsIntMap 'DR.ActiveRoom <- liftIO $ readTVarIO tvar
   pure $ IntMapRepo.findById activeRooms rId
+
+getLobbyRoomsList :: InMemory reader m => m [(DR.Room 'DR.LobbyRoom, DR.RoomId 'DR.LobbyRoom)]
+getLobbyRoomsList = do
+  tvar <- asks (roomDBLobby . getter)
+  repo <- liftIO $ readTVarIO tvar
+  pure $ map (\(key, room) -> (room, DR.RoomId key)) . IntMap.toList . IntMapRepo.repoMap $ repo
