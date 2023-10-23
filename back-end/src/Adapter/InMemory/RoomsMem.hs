@@ -5,16 +5,17 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Adapter.InMemory.RoomsMem (
-  RoomsDB,
-  emptyRoomDB,
-  createLobbyRoom,
-  findLobbyRoomById,
-  updateLobbyRoom,
-  deleteLobbyRoom,
-  runActiveRoom,
-  findActiveRoomById
-) where
+module Adapter.InMemory.RoomsMem
+  ( RoomsDB,
+    emptyRoomDB,
+    createLobbyRoom,
+    findLobbyRoomById,
+    updateLobbyRoom,
+    deleteLobbyRoom,
+    runActiveRoom,
+    findActiveRoomById,
+  )
+where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Monad.RWS (MonadIO (liftIO), MonadReader, asks)

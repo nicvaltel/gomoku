@@ -1,12 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Domain.MessagesInput where
 
-import Domain.User (Username, Password)
+import Data.Aeson (FromJSON, ToJSON, decode, encode)
 import Data.Text (Text)
-import Data.Aeson(FromJSON, ToJSON, encode, decode)
+import Domain.User (Password, Username)
 import GHC.Generics (Generic)
 
 data WebSocketInputMessage
@@ -30,15 +30,23 @@ data AnswerExistingUser = ExistingAnon Int | ExistingRegisteredUser Int Text | N
   deriving (Show, Generic)
 
 instance FromJSON LogInOut
+
 instance FromJSON InitJoinRoom
+
 instance FromJSON GameAction
+
 instance FromJSON AnswerExistingUser
+
 instance FromJSON WebSocketInputMessage
 
 instance ToJSON LogInOut
+
 instance ToJSON InitJoinRoom
+
 instance ToJSON GameAction
+
 instance ToJSON AnswerExistingUser
+
 instance ToJSON WebSocketInputMessage
 
 -- instance ToJSON Person

@@ -3,7 +3,7 @@
 
 module TestLib where
 
-import qualified Lib
+import qualified LibRepos
 import Domain.User 
 import Domain.Room ( RoomsRepo(..), RoomId )
 import Control.Monad.IO.Class (liftIO)
@@ -11,7 +11,7 @@ import Domain.GameLogic (GameType(..))
 import Data.Maybe (fromJust)
 
 
-testUser :: Lib.App (UserId 'Registered)
+testUser :: LibRepos.App (UserId 'Registered)
 testUser = do
     mbUserId <- addRegUser "Vasyan2" "Bubu112233"
     let userId = fromJust mbUserId
@@ -23,7 +23,7 @@ testUser = do
     pure userId
 
 
-testRoom :: UserId 'Registered -> Lib.App ()
+testRoom :: UserId 'Registered -> LibRepos.App ()
 testRoom userId = do
     (roomLobby, roomLobbyId) <- createLobbyRoom (Right userId) GameType
     mbActive <- runActiveRoom roomLobbyId
@@ -34,7 +34,7 @@ testRoom userId = do
     pure ()
 
 
-testAll :: Lib.App ()
+testAll :: LibRepos.App ()
 testAll = do
     userId <- testUser
     testRoom userId

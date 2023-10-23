@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Lib where
+module LibRepos where
 
 import qualified Adapter.InMemory.ConnectionsMem as CM
 import qualified Adapter.InMemory.UsersMem as UM
@@ -16,6 +16,12 @@ import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection)
 import Domain.Types
 import qualified Network.WebSockets as WS
+import Control.Exception (SomeException)
+import Control.Monad.Catch (MonadCatch(..))
+import Domain.WebSocketServer (WebSocketServer(..))
+import qualified Adapter.WSServer as AWSS
+
+
 
 type AppState = (UM.UsersDB, CM.ConnsDB, RM.RoomsDB, Pool Connection)
 
@@ -49,43 +55,33 @@ instance RoomsRepo App where
   findActiveRoomById = RM.findActiveRoomById
   archiveRoom = RPG.archiveRoom
 
+instance WebSocketServer App where
+  webSocketServer = AWSS.webSocketServer
+  -- handshake = undefined
+  processInputLogInOut = undefined
+  processInputInitJoinRoom = undefined
+  processInputGameAction = undefined
+  processInputIncorrect = undefined
+  processInputAnswerExistingUser = undefined
 
--- runWebSocketServer :: Host -> Port -> PingTime -> App ()
--- runWebSocketServer host port pingTime = do
---         liftIO $ WS.runServer host port $ \pending -> runReaderT (unApp (webSocketServer pingTime pending))
---         pure ()
 
-
-
-
-
-
-runApp :: Pool Connection -> App a -> IO a
-runApp poolConn app = do
+runTestApp :: Pool Connection -> App a -> IO a
+runTestApp poolConn testApp = do
   appStateUserDB <- UM.emptyUserDB
   appStateConnDB <- CM.emptyConnDB
   appStateRoomDB <- RM.emptyRoomDB
-  runReaderT (unApp app) (appStateUserDB, appStateConnDB,appStateRoomDB, poolConn)
+  runReaderT (unApp testApp) (appStateUserDB, appStateConnDB,appStateRoomDB, poolConn)
 
 
-
-webSocketServer :: PingTime -> WS.PendingConnection -> App ()
-webSocketServer pingTime pending = do
-  conn <- liftIO $ WS.acceptRequest pending 
-  pure ()
-
-runwebSocketServerApp :: Host -> Port -> PingTime -> Pool Connection -> IO ()
-runwebSocketServerApp host port pingTime poolConn = do
+runwebSocketServerAnyApp :: Host -> Port -> Pool Connection -> (WS.PendingConnection -> App ()) -> IO ()
+runwebSocketServerAnyApp host port poolConn app = do
   appStateUserDB <- UM.emptyUserDB
   appStateConnDB <- CM.emptyConnDB
   appStateRoomDB <- RM.emptyRoomDB
-  let ioApp pending = runReaderT (unApp $ webSocketServer pingTime pending) (appStateUserDB, appStateConnDB,appStateRoomDB, poolConn)
+  let ioApp pending = runReaderT (unApp $ app pending) (appStateUserDB, appStateConnDB,appStateRoomDB, poolConn)
   WS.runServer host port ioApp
 
--- runwebSocketServerAnyApp :: Host -> Port -> PingTime -> Pool Connection -> (WS.PendingConnection -> App ()) -> IO ()
--- runwebSocketServerAnyApp host port pingTime poolConn app = do
---   appStateUserDB <- UM.emptyUserDB
---   appStateConnDB <- CM.emptyConnDB
---   appStateRoomDB <- RM.emptyRoomDB
---   let ioApp pending = runReaderT (unApp $ app pending) (appStateUserDB, appStateConnDB,appStateRoomDB, poolConn)
---   WS.runServer host port ioApp
+
+runwebSocketServerApp :: Host -> Port -> PingTime -> Pool Connection -> IO ()
+runwebSocketServerApp host port pingTime poolConn =
+  runwebSocketServerAnyApp host port poolConn (webSocketServer pingTime)

@@ -30,6 +30,8 @@ library
       Adapter.InMemory.UsersMem
       Adapter.PostgreSQL.RoomsDB
       Adapter.PostgreSQL.UsersDB
+      Adapter.WSGamesList
+      Adapter.WSServer
       Domain.Connection
       Domain.GameLogic
       Domain.MessagesInput
@@ -40,7 +42,7 @@ library
       Domain.WebSocketServer
       HSPG.HSPG
       HSPG.TVarPG
-      Lib
+      LibRepos
       Params
       PostgreSQLConnector
       RunApp

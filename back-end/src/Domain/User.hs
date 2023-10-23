@@ -28,7 +28,7 @@ data User (r :: RegStatus) = User {userUserId :: UserId r, userName :: Username}
 class Monad m => UsersRepo m where
   addRegUser :: Username -> Password -> m (Maybe (UserId 'Registered))
   addRegUserToDB :: Username -> Password -> m (Maybe (UserId 'Registered))
-  addAnonUser :: m (Maybe (UserId 'Anonim))
+  addAnonUser :: m (UserId 'Anonim)
   findAnyUserById :: AnyUserId -> m (Maybe (Either (User 'Anonim) (User 'Registered)))
   updateRegUser :: UserId 'Registered -> User 'Registered -> m ()
   deleteRegUser :: UserId 'Registered -> m ()

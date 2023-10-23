@@ -1,16 +1,16 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Domain.Room where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
 import Domain.GameLogic
 import Domain.Types (Timestamp)
 import Domain.User
 import GHC.Generics (Generic)
-import Data.Aeson (FromJSON, ToJSON)
 
 data RoomStatus = LobbyRoom | ActiveRoom | FinishedRoom
   deriving (Show, Eq, Ord)
@@ -36,7 +36,7 @@ class Monad m => RoomsRepo m where
   deleteLobbyRoom :: RoomId 'LobbyRoom -> m ()
   runActiveRoom :: RoomId 'LobbyRoom -> m (Maybe (Room 'ActiveRoom, RoomId 'ActiveRoom))
   findActiveRoomById :: RoomId 'ActiveRoom -> m (Maybe (Room 'ActiveRoom))
-  archiveRoom :: RoomId 'ActiveRoom -> m (Maybe ( RoomId 'FinishedRoom))
+  archiveRoom :: RoomId 'ActiveRoom -> m (Maybe (RoomId 'FinishedRoom))
 
 mkNewRoom :: AnyUserId -> GameType -> Room 'LobbyRoom
 mkNewRoom anyUserId gameType =
@@ -58,6 +58,6 @@ activeRoomToFinished :: Room 'ActiveRoom -> Room 'FinishedRoom
 activeRoomToFinished Room {roomGameType, roomCreator, roomOpponents, roomChat, roomGameActions, roomBoardState, roomGameResult} =
   Room {roomGameType, roomCreator, roomOpponents, roomChat, roomGameActions, roomBoardState, roomGameResult}
 
-
 instance FromJSON (RoomId s)
+
 instance ToJSON (RoomId s)

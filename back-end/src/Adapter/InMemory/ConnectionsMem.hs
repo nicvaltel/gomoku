@@ -32,7 +32,7 @@ type InMemory reader m = (Has ConnsDB reader, MonadReader reader m, MonadIO m)
 emptyConnDB :: IO ConnsDB
 emptyConnDB = newTVarIO IntMapRepo.empty
 
-addConn :: InMemory reader m => WS.Connection -> AnyUserId -> DC.ConnStatus -> m DC.ConnId
+addConn :: InMemory reader m => WS.Connection -> AnyUserId -> DC.ConnStatus -> m (DC.ConnId, DC.ConnState)
 addConn connStateWSConnection connStateUserId connStatus = do
   let connState = DC.ConnState {connStateWSConnection, connStateUserId, connStatus}
   tvar <- asks getter
@@ -40,7 +40,7 @@ addConn connStateWSConnection connStateUserId connStatus = do
     connsMap :: ConnectionsIntMap <- readTVar tvar
     let (newConnsMap, newConnId) = IntMapRepo.add connsMap connState
     writeTVar tvar newConnsMap
-    pure (DC.ConnId newConnId)
+    pure (DC.ConnId newConnId, connState)
 
 findConnById :: InMemory reader m => DC.ConnId -> m (Maybe DC.ConnState)
 findConnById (DC.ConnId connId) = do

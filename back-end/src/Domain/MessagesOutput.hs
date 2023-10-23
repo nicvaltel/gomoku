@@ -1,10 +1,10 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DataKinds #-}
 
 module Domain.MessagesOutput where
 
-import Data.Aeson (FromJSON , ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import Domain.Room (RoomId, RoomStatus (..))
 import Domain.User (RegStatus (Anonim, Registered), UserId)
 import GHC.Generics (Generic)
@@ -30,9 +30,13 @@ data LoginLogoutMsg
   deriving (Show, Generic)
 
 instance FromJSON RoomMsg
+
 instance FromJSON LoginLogoutMsg
+
 instance FromJSON WebSocketOutputMessage
 
 instance ToJSON RoomMsg
+
 instance ToJSON LoginLogoutMsg
+
 instance ToJSON WebSocketOutputMessage

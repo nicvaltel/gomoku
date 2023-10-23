@@ -65,14 +65,14 @@ addRegUser username password = do
         writeTVar tvar newUsersMap
         pure (Just userId)
 
-addAnonUser :: InMemory reader m => m (Maybe (UserId 'Anonim))
+addAnonUser :: InMemory reader m => m (UserId 'Anonim)
 addAnonUser = do
   tvar <- asks getter
   liftIO $ atomically $ do
     usersMap :: UsersIntMap <- readTVar tvar
     let (newUsersMap, newUserId) = addAnonUser' "Anon" usersMap
     writeTVar tvar newUsersMap
-    pure (Just newUserId)
+    pure newUserId
 
 findAnyUserById :: InMemory reader m => AnyUserId -> m (Maybe (Either (User 'Anonim) (User 'Registered)))
 findAnyUserById anyUid = do
@@ -104,9 +104,8 @@ deleteAnonUser uId = do
     let newUsersMap = deleteAnonUser' uId usersMap
     writeTVar tvar newUsersMap
 
-
 addRegUser' :: UserId 'Registered -> Username -> UsersIntMap -> UsersIntMap
-addRegUser' userUserId@(UserId uId) userName inputMap@UsersIntMap{regUsers} =
+addRegUser' userUserId@(UserId uId) userName inputMap@UsersIntMap {regUsers} =
   let newUser = User {userUserId, userName}
       newRegUsers = IntMap.insert uId newUser regUsers
    in inputMap {regUsers = newRegUsers}

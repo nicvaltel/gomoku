@@ -1,10 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Adapter.PostgreSQL.UsersDB ( addRegUserToDB, checkPassword) where
+module Adapter.PostgreSQL.UsersDB (addRegUserToDB, checkPassword) where
 
 import Control.Monad.RWS (MonadIO (liftIO), MonadReader, asks)
 import Data.Has (Has (getter))
@@ -15,18 +15,17 @@ import qualified PostgreSQLConnector as PG
 
 type InPostgres reader m = (Has (Pool Connection) reader, MonadReader reader m, MonadIO m)
 
-addRegUserToDB :: (UsersRepo m, InPostgres reader m) =>  Username -> Password -> m (Maybe (UserId 'Registered))
-addRegUserToDB username passwd  = do
-    poolConn <- asks getter
-    res :: [Only Int] <- liftIO $ PG.withDBConn poolConn $ \conn -> query conn queryStr (username, passwd)
-    case res of
-        [Only uId] -> pure $ Just (UserId uId)
-        _ -> pure Nothing
+addRegUserToDB :: (UsersRepo m, InPostgres reader m) => Username -> Password -> m (Maybe (UserId 'Registered))
+addRegUserToDB username passwd = do
+  poolConn <- asks getter
+  res :: [Only Int] <- liftIO $ PG.withDBConn poolConn $ \conn -> query conn queryStr (username, passwd)
+  case res of
+    [Only uId] -> pure $ Just (UserId uId)
+    _ -> pure Nothing
   where
     queryStr = "INSERT INTO gomoku_hub.users (username, passwd, created) VALUES(?, crypt(?, gen_salt('bf')), (now() AT TIME ZONE 'utc'::text)) returning id;"
 
-
-checkPassword :: (UsersRepo m, InPostgres reader m) =>  UserId 'Registered -> Password -> m Bool
+checkPassword :: (UsersRepo m, InPostgres reader m) => UserId 'Registered -> Password -> m Bool
 checkPassword (UserId uId) passwd = do
   poolConn <- asks getter
   res :: [Only Int] <- liftIO $ PG.withDBConn poolConn $ \conn -> query conn queryStr (uId, passwd)
