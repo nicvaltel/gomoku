@@ -29,8 +29,8 @@ runApp envFile = do
     putStrLn (printf "Listening at: %s:%d" host port :: String)
 
 
-    -- _ <- forkIO $ GamesList.runWSGamesList host (port + 1)
-    -- putStrLn (printf "GamesList at: %s:%d" host (port + 1) :: String)
+    _ <- forkIO $ LibRepos.runWSGamesList host (port + 1) pingTime poolConn
+    putStrLn (printf "GamesList at: %s:%d" host (port + 1) :: String)
 
     -- LibRepos.runApp poolConn (TestLib.testAll)
     LibRepos.runwebSocketServerApp host port pingTime poolConn

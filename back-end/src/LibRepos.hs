@@ -10,7 +10,7 @@ import qualified Adapter.PostgreSQL.RoomsDB as RPG
 import qualified Adapter.PostgreSQL.UsersDB as UPG
 import qualified Adapter.WSGamesList as AWSGL
 import qualified Adapter.WSServer as AWSS
-import Control.Monad.Reader (MonadIO, MonadReader, ReaderT (runReaderT))
+import Control.Monad.Reader (MonadIO, MonadReader, ReaderT (..))
 import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection)
 import Domain.Connection (ConnectionsRepo (..))
@@ -20,13 +20,16 @@ import Domain.User (UsersRepo (..))
 import Domain.WebSocketServer (WSGamesList (..), WebSocketServer (..))
 import qualified Network.WebSockets as WS
 import Utils.Utils
+import Control.Monad.Catch (MonadCatch, MonadThrow)
+import Control.Monad.Catch.Pure (MonadCatch(..))
 
 type AppState = (UM.UsersDB, CM.ConnsDB, RM.RoomsDB, Pool Connection)
 
 newtype App a = App
   { unApp :: ReaderT AppState IO a
   }
-  deriving (Applicative, Functor, Monad, MonadReader AppState, MonadIO)
+  deriving (Applicative, Functor, Monad, MonadReader AppState, MonadIO, MonadThrow, MonadCatch)
+
 
 instance UsersRepo App where
   addRegUser = UM.addRegUser

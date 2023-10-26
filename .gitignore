@@ -12,7 +12,7 @@ back-end/.stack-work/
 back-end/out/
 back-end/back-end-exe
 back-end/run_deploy.sh
-back-end/src/HSPG
+back-end/src/HSPG/
 
 front-end/go-assets/
 front-end/node_modules/

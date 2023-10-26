@@ -2,13 +2,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Adapter.WSServer
   ( webSocketServer,
   )
 where
 
-import Control.Exception (SomeException, catch)
+-- import Control.Exception (SomeException(..), catch, Exception (toException))
+import Control.Monad.Catch(SomeException, catch, MonadCatch)
 import Control.Monad (forever, when)
 import Control.Monad.Cont (MonadIO (liftIO))
 import Data.Text (Text)
@@ -21,7 +23,7 @@ import Params (_DEBUG_MODE)
 import Text.Printf (printf)
 import Utils.Utils
 
-type WSSApp m = (MonadIO m, UsersRepo m, ConnectionsRepo m)
+type WSSApp m = (MonadIO m, UsersRepo m, ConnectionsRepo m, MonadCatch m)
 
 webSocketServer :: WSSApp m => PingTime -> WS.PendingConnection -> m ()
 webSocketServer pingTime pending = do
@@ -30,22 +32,12 @@ webSocketServer pingTime pending = do
 
   liftIO $ logger LgInfo $ printf "Connected %s" (show connId)
 
-  -- for debug
   when _DEBUG_MODE $ do
-    -- connState <- lookupConnState (getConnRepo wss) idConn
     liftIO $ logger LgDebug $ show connState
 
-  listener <- threadMessageListener connId connState
-  liftIO $ WS.withPingThread conn pingTime (pure ()) $ do
-    catch
-      (pure listener)
-      (\(e :: SomeException) -> putStrLn ("WebSocket thread error: " ++ show e) >> disconnect connId)
+  threadMessageListenerIO <- threadMessageListener connId connState
+  liftIO $ WS.withPingThread conn pingTime (pure ()) $ pure threadMessageListenerIO
 
-  pure ()
-  where
-    disconnect connId = do
-      --   removeConn (getConnRepo wss) idConn -- TODO
-      logger LgInfo $ show connId ++ " disconnected"
 
 handshake :: WSSApp m => WS.Connection -> m (ConnId, ConnState)
 handshake conn = do
@@ -54,7 +46,19 @@ handshake conn = do
   addConn conn (Left userIdAnon) NormalConnection
 
 threadMessageListener :: WSSApp m => ConnId -> ConnState -> m ()
-threadMessageListener connId ConnState {connStateWSConnection} = forever $ do
+threadMessageListener connId connState = 
+  catch
+    (messageListener connId connState)
+    (\(e :: SomeException) -> do
+      liftIO $ putStrLn ("WebSocket thread error: " ++ show e) 
+      disconnect)
+  where
+    disconnect = do
+      deleteConn connId
+      liftIO $ logger LgInfo $ show connId ++ " disconnected"
+
+messageListener :: WSSApp m => ConnId -> ConnState -> m ()
+messageListener connId ConnState {connStateWSConnection} = forever $ do
   (msg :: Text) <- liftIO $ WS.receiveData connStateWSConnection
   liftIO $ logger LgInfo $ "RECIEVE #(" <> show connId <> "): " <> Text.unpack msg
-  pure ()
+

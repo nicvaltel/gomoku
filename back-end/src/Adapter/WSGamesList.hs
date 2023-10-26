@@ -28,14 +28,9 @@ type WSSApp m = (MonadIO m, UsersRepo m, ConnectionsRepo m, RoomsRepo m)
 wssGamesList :: WSSApp m => PingTime -> (WS.PendingConnection -> m ())
 wssGamesList pingTime pending = do
   conn <- liftIO $ WS.acceptRequest pending
-  sender <- lobbySender conn
+  lobbySenderIO <- lobbySender conn
   liftIO $
-    WS.withPingThread conn pingTime (return ()) $
-      pure sender
-
-getLobbyGamesList :: WSSApp m => m [(DU.Username, DGL.GameType)]
-getLobbyGamesList =
-  map (\(room, _) -> (roomCreatorUsername room, roomGameType room)) <$> getLobbyRoomsList
+    WS.withPingThread conn pingTime (return ()) $ pure lobbySenderIO
 
 lobbySender :: WSSApp m => WS.Connection -> m ()
 lobbySender conn = forever $ do
@@ -44,3 +39,7 @@ lobbySender conn = forever $ do
   let message = encode lobbyMsg
   liftIO $ WS.sendTextData conn message
   liftIO $ threadDelay 500_000
+
+getLobbyGamesList :: WSSApp m => m [(DU.Username, DGL.GameType)]
+getLobbyGamesList =
+  map (\(room, _) -> (roomCreatorUsername room, roomGameType room)) <$> getLobbyRoomsList
