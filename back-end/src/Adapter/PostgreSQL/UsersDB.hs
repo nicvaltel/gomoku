@@ -12,6 +12,7 @@ import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection, Only (Only), query)
 import Domain.User hiding (addRegUserToDB, checkPassword)
 import qualified PostgreSQLConnector as PG
+import Domain.Types (Password)
 
 type InPostgres reader m = (Has (Pool Connection) reader, MonadReader reader m, MonadIO m)
 

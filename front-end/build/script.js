@@ -1,4 +1,21 @@
+"use strict";
 // npx eslint draw-board.ts
+// import { ConnId, Password, Handshake, WebSocketInputMessage, encodeWebSocketInputMessage, decodeWebSocketInputMessage, ExistingAnonConn } from './handshake';
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var StoneColor;
 (function (StoneColor) {
     StoneColor[StoneColor["Black"] = 0] = "Black";
@@ -115,7 +132,7 @@ function initGameIO(cfg) {
     webSocket.addEventListener('open', function (event) {
         console.log('WebSocket connection opened:', event);
         // Send a message to the server (optional)
-        webSocket.send('Hello, server!');
+        // webSocket.send('Hello, server!');
     });
     // Event handler when a message is received from the server
     webSocket.addEventListener('message', function (event) {
@@ -266,8 +283,112 @@ function waitForSocketConnectionIO(socket, callback) {
         }
     }, 5); // wait 5 milisecond for the connection...
 }
+var Handshake = /** @class */ (function () {
+    function Handshake(connId, userId, password) {
+        this.connId = connId;
+        this.userId = userId;
+        this.password = password;
+    }
+    return Handshake;
+}());
+var ExistingAnonConn = /** @class */ (function (_super) {
+    __extends(ExistingAnonConn, _super);
+    function ExistingAnonConn(connId, userId) {
+        return _super.call(this, connId, userId) || this;
+    }
+    return ExistingAnonConn;
+}(Handshake));
+var ExistingRegisteredUserAndConn = /** @class */ (function (_super) {
+    __extends(ExistingRegisteredUserAndConn, _super);
+    function ExistingRegisteredUserAndConn(connId, userId, password) {
+        return _super.call(this, connId, userId, password) || this;
+    }
+    return ExistingRegisteredUserAndConn;
+}(Handshake));
+var ExistingRegisteredUserNewConn = /** @class */ (function (_super) {
+    __extends(ExistingRegisteredUserNewConn, _super);
+    function ExistingRegisteredUserNewConn(userId, password) {
+        return _super.call(this, 0, userId, password) || this;
+    }
+    return ExistingRegisteredUserNewConn;
+}(Handshake));
+var NonExisting = /** @class */ (function (_super) {
+    __extends(NonExisting, _super);
+    function NonExisting() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return NonExisting;
+}(Handshake));
+// Add other WebSocketInputMessage subtypes here
+// Custom encoding function
+function encodeWebSocketInputMessage(message) {
+    if (message.type === 'HandshakeInMsg') {
+        var payload = message.payload;
+        if (payload instanceof ExistingAnonConn) {
+            // Handle ExistingAnonConn case
+            return JSON.stringify({
+                tag: 'HandshakeInMsg',
+                contents: {
+                    tag: 'ExistingAnonConn',
+                    contents: [
+                        { unConnId: payload.connId },
+                        { unUserId: payload.userId },
+                    ],
+                },
+            });
+        }
+        else if (payload instanceof ExistingRegisteredUserAndConn) {
+            // Handle ExistingRegisteredUserAndConn case
+            return JSON.stringify({
+                tag: 'HandshakeInMsg',
+                contents: {
+                    tag: 'ExistingRegisteredUserAndConn',
+                    unConnId: payload.connId,
+                    unUserId: payload.userId,
+                    unPassword: payload.password,
+                },
+            });
+        }
+        else if (payload instanceof ExistingRegisteredUserNewConn) {
+            // Handle ExistingRegisteredUserNewConn case
+            return JSON.stringify({
+                tag: 'HandshakeInMsg',
+                contents: {
+                    tag: 'ExistingRegisteredUserNewConn',
+                    unUserId: payload.userId,
+                    unPassword: payload.password,
+                },
+            });
+        }
+        else if (payload instanceof NonExisting) {
+            // Handle NonExisting case
+            return JSON.stringify({
+                tag: 'HandshakeInMsg',
+                contents: { tag: 'NonExisting' },
+            });
+        }
+    }
+    // Return an empty string if the message type is not recognized
+    return '';
+}
+// ---
+// // Example usages:
+var messageToEncode = {
+    type: 'HandshakeInMsg',
+    payload: new ExistingAnonConn(777, 888),
+};
+// Encode the message to JSON
+var encodedMessage = encodeWebSocketInputMessage(messageToEncode);
+// ///////////////////////////////
 function startGameLoopIO(allGameData) {
-    sendMessageIO(allGameData.webSocket, 'Init');
+    // sendMessageIO(allGameData.webSocket,'Init')
+    sendMessageIO(allGameData.webSocket, encodedMessage);
+    // console.log("messageToEncode = ")
+    // console.log(messageToEncode)
+    // console.log("encodedMessage = ")
+    // console.log(encodedMessage)
+    // // console.log("decodedMessage = ")
+    // // console.log(decodedMessage)
     if (!allGameData.gameLoopId) {
         allGameData.gameLoopId = setInterval(function () {
             gameLoopIO(allGameData);
@@ -276,3 +397,5 @@ function startGameLoopIO(allGameData) {
 }
 var allGameData = initGameIO(gameConfig);
 startGameLoopIO(allGameData);
+// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}
+// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}

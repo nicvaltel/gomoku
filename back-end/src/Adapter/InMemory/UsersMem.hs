@@ -24,7 +24,6 @@ import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Domain.User
   ( AnyUserId,
-    Password,
     RegStatus (Anonim, Registered),
     User (..),
     UserId (..),
@@ -32,6 +31,7 @@ import Domain.User
   )
 import qualified Domain.User as DU
 import Utils.Utils (tshow)
+import Domain.Types (Password)
 
 type UsersDB = TVar UsersIntMap
 

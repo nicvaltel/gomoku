@@ -48,13 +48,14 @@ findConnById (DC.ConnId connId) = do
   connsMap :: ConnectionsIntMap <- liftIO $ readTVarIO tvar
   pure $ IntMapRepo.findById connsMap connId
 
-updateConn :: InMemory reader m => DC.ConnId -> DC.ConnState -> m ()
-updateConn (DC.ConnId connId) newConnState = do
+updateConn :: InMemory reader m => DC.ConnId -> DC.ConnState -> m (DC.ConnId, DC.ConnState)
+updateConn cId@(DC.ConnId connId) newConnState = do
   tvar <- asks getter
   liftIO $ atomically $ do
     connsMap :: ConnectionsIntMap <- readTVar tvar
     let newConnsMap = IntMapRepo.update connsMap connId newConnState
     writeTVar tvar newConnsMap
+    pure (cId, newConnState)
 
 deleteConn :: InMemory reader m => DC.ConnId -> m ()
 deleteConn (DC.ConnId connId) = do

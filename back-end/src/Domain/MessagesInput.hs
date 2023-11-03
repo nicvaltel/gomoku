@@ -1,20 +1,27 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
 
 module Domain.MessagesInput where
 
 import Data.Aeson (FromJSON, ToJSON, decode, encode)
 import Data.Text (Text)
-import Domain.User (Password, Username)
+import Domain.User (Username, UserId(..), RegStatus (..))
 import GHC.Generics (Generic)
+import qualified Network.WebSockets as WS
+import Data.ByteString.Lazy (fromStrict)
+import Data.Text.Encoding (decodeUtf8)
+import Utils.Utils
+import Domain.Connection (ConnId(..))
+import Domain.Types (Password)
 
 data WebSocketInputMessage
   = LogInOutInMsg LogInOut
   | InitJoinRoomInMsg InitJoinRoom
   | GameActionInMsg GameAction
   | IncorrectInMsg Text
-  | AnswerExistingUserInMsg AnswerExistingUser
+  | HandshakeInMsg Handshake
   deriving (Show, Generic)
 
 data LogInOut = Login Username Password | Logout | Register Username Password
@@ -26,7 +33,11 @@ data InitJoinRoom = InitGameRoom Text | JoinGameRoom Text
 newtype GameAction = GameAction Text
   deriving (Show, Generic)
 
-data AnswerExistingUser = ExistingAnon Int | ExistingRegisteredUser Int Text | NonExistingUser
+data Handshake = 
+  ExistingAnonConn ConnId (UserId 'Anonim)
+  | ExistingRegisteredUserAndConn ConnId (UserId 'Registered) Password 
+  | ExistingRegisteredUserNewConn (UserId 'Registered) Password 
+  | NonExisting
   deriving (Show, Generic)
 
 instance FromJSON LogInOut
@@ -35,7 +46,7 @@ instance FromJSON InitJoinRoom
 
 instance FromJSON GameAction
 
-instance FromJSON AnswerExistingUser
+instance FromJSON Handshake
 
 instance FromJSON WebSocketInputMessage
 
@@ -45,7 +56,7 @@ instance ToJSON InitJoinRoom
 
 instance ToJSON GameAction
 
-instance ToJSON AnswerExistingUser
+instance ToJSON Handshake
 
 instance ToJSON WebSocketInputMessage
 
@@ -61,6 +72,17 @@ instance ToJSON WebSocketInputMessage
 --       _ -> fail "Invalid tag"
 --   parseJSON _ = fail "Invalid JSON format"
 
+
+receiveWebSocketInMsg :: String -> WS.Connection -> IO WebSocketInputMessage
+receiveWebSocketInMsg logPrefix conn = do
+  input <-  WS.receiveData conn
+  logger LgMessage $ logPrefix ++ show input
+  let txt :: Text = decodeUtf8 input
+  case decode (fromStrict input) of
+    Nothing -> pure (IncorrectInMsg txt)
+    Just inputMsg -> pure inputMsg
+
+
 test :: IO ()
 test = do
   let username = "USER_111"
@@ -70,3 +92,6 @@ test = do
   let xloginOut :: Maybe WebSocketInputMessage = decode loginOut
   print xloginOut
   pure ()
+
+
+-- liftIO $ print $ encode $ HandshakeInMsg (ExistingAnonConn (ConnId 777) (UserId 888))

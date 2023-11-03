@@ -1,4 +1,6 @@
 // npx eslint draw-board.ts
+// import { ConnId, Password, Handshake, WebSocketInputMessage, encodeWebSocketInputMessage, decodeWebSocketInputMessage, ExistingAnonConn } from './handshake';
+
 
 enum StoneColor {
     Black,
@@ -214,7 +216,7 @@ function initGameIO(cfg: GameConfig): AllGameData {
         console.log('WebSocket connection opened:', event);
 
         // Send a message to the server (optional)
-        webSocket.send('Hello, server!');
+        // webSocket.send('Hello, server!');
     });
 
     // Event handler when a message is received from the server
@@ -347,7 +349,7 @@ function getInputDataIO(inputBuffer: InputData): InputData {
     return inputData
 }
 
-function processGameLogic(allGameData): AllGameData {
+function processGameLogic(allGameData: AllGameData): AllGameData {
     const { inputData, canvases, sizes } = allGameData;
     allGameData.boardState.newStoneCandidate = findNearestToMouseCoord(inputData.mouseX, inputData.mouseY, canvases.canvas, sizes);
     return allGameData;
@@ -399,9 +401,138 @@ function waitForSocketConnectionIO(socket : WebSocket, callback : () => void){
         }, 5); // wait 5 milisecond for the connection...
 }
 
+
+
+
+
+
+// ///////////////////////////////
+
+type ConnId = number;
+type UserId = number;
+type Password = string;
+
+class Handshake {
+  constructor(
+    public connId: ConnId,
+    public userId: UserId,
+    public password?: Password
+  ) {}
+}
+
+class ExistingAnonConn extends Handshake {
+  constructor(connId: ConnId, userId: UserId) {
+    super(connId, userId);
+  }
+}
+
+class ExistingRegisteredUserAndConn extends Handshake {
+  constructor(connId: ConnId, userId: UserId, password: Password) {
+    super(connId, userId, password);
+  }
+}
+
+class ExistingRegisteredUserNewConn extends Handshake {
+  constructor(userId: UserId, password: Password) {
+    super(0, userId, password);
+  }
+}
+
+class NonExisting extends Handshake {}
+
+// Define the WebSocketInputMessage union type
+type WebSocketInputMessage =
+  | { type: 'HandshakeInMsg'; payload: Handshake };
+  // Add other WebSocketInputMessage subtypes here
+
+// Custom encoding function
+function encodeWebSocketInputMessage(message: WebSocketInputMessage): string {
+    if (message.type === 'HandshakeInMsg') {
+      const payload = message.payload;
+  
+      if (payload instanceof ExistingAnonConn) {
+        // Handle ExistingAnonConn case
+        return JSON.stringify({
+          tag: 'HandshakeInMsg',
+          contents: {
+            tag: 'ExistingAnonConn',
+            contents: [
+              { unConnId: payload.connId },
+              { unUserId: payload.userId },
+            ],
+          },
+        });
+      } else if (payload instanceof ExistingRegisteredUserAndConn) {
+        // Handle ExistingRegisteredUserAndConn case
+        return JSON.stringify({
+          tag: 'HandshakeInMsg',
+          contents: {
+            tag: 'ExistingRegisteredUserAndConn',
+            unConnId: payload.connId,
+            unUserId: payload.userId,
+            unPassword: payload.password,
+          },
+        });
+      } else if (payload instanceof ExistingRegisteredUserNewConn) {
+        // Handle ExistingRegisteredUserNewConn case
+        return JSON.stringify({
+          tag: 'HandshakeInMsg',
+          contents: {
+            tag: 'ExistingRegisteredUserNewConn',
+            unUserId: payload.userId,
+            unPassword: payload.password,
+          },
+        });
+      } else if (payload instanceof NonExisting) {
+        // Handle NonExisting case
+        return JSON.stringify({
+          tag: 'HandshakeInMsg',
+          contents: { tag: 'NonExisting' },
+        });
+      }
+    }
+  
+    // Return an empty string if the message type is not recognized
+    return '';
+  }
+  
+
+// ---
+
+
+// // Example usages:
+
+const messageToEncode: WebSocketInputMessage = {
+    type: 'HandshakeInMsg',
+    payload: new ExistingAnonConn(777, 888),
+  };
+  
+  // Encode the message to JSON
+  const encodedMessage = encodeWebSocketInputMessage(messageToEncode);
+  
+
+// ///////////////////////////////
+
+
+
+
+
+
+
+
 function startGameLoopIO(allGameData: AllGameData): void {
 
-    sendMessageIO(allGameData.webSocket,'Init')
+    // sendMessageIO(allGameData.webSocket,'Init')
+    sendMessageIO(allGameData.webSocket,encodedMessage)
+
+    // console.log("messageToEncode = ")
+    // console.log(messageToEncode)
+
+    // console.log("encodedMessage = ")
+    // console.log(encodedMessage)
+
+    // // console.log("decodedMessage = ")
+    // // console.log(decodedMessage)
 
     if (!allGameData.gameLoopId) {
         allGameData.gameLoopId = setInterval(() => {
@@ -412,3 +543,10 @@ function startGameLoopIO(allGameData: AllGameData): void {
 
 const allGameData = initGameIO(gameConfig);
 startGameLoopIO(allGameData)
+
+
+
+  
+// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}
+// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}
+

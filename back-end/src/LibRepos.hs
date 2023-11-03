@@ -21,7 +21,6 @@ import Domain.WebSocketServer (WSGamesList (..), WebSocketServer (..))
 import qualified Network.WebSockets as WS
 import Utils.Utils
 import Control.Monad.Catch (MonadCatch, MonadThrow)
-import Control.Monad.Catch.Pure (MonadCatch(..))
 
 type AppState = (UM.UsersDB, CM.ConnsDB, RM.RoomsDB, Pool Connection)
 
@@ -59,13 +58,11 @@ instance RoomsRepo App where
 
 instance WebSocketServer App where
   webSocketServer = AWSS.webSocketServer
-
-  -- handshake = undefined
   processInputLogInOut = undefined
   processInputInitJoinRoom = undefined
   processInputGameAction = undefined
   processInputIncorrect = undefined
-  processInputAnswerExistingUser = undefined
+  processInputHandshake = undefined
 
 instance WSGamesList App where
   wssGamesList = AWSGL.wssGamesList

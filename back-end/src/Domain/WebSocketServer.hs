@@ -10,13 +10,11 @@ import qualified Network.WebSockets as WS
 
 class Monad m => WebSocketServer m where
   webSocketServer :: PingTime -> WS.PendingConnection -> m ()
-
-  -- handshake :: WS.Connection -> m (ConnState, ConnId)
   processInputLogInOut :: ConnId -> ConnState -> LogInOut -> m ()
   processInputInitJoinRoom :: ConnId -> ConnState -> InitJoinRoom -> m ()
   processInputGameAction :: ConnId -> ConnState -> GameAction -> m ()
   processInputIncorrect :: ConnId -> ConnState -> Text -> m ()
-  processInputAnswerExistingUser :: ConnId -> ConnState -> AnswerExistingUser -> m ()
+  processInputHandshake :: ConnId -> ConnState -> Handshake -> m ()
 
 class Monad m => WSGamesList m where
   wssGamesList :: PingTime -> WS.PendingConnection -> m ()

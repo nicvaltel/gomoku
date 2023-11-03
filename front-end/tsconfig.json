@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+    "target": "es5",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // "module": "esnext",
+    "module": "es6",
+    "moduleResolution": "node",
+    "lib": ["es2016", "esnext", "dom"],
+    "outDir": "build",
+    "strict": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+  },
+  "include": ["./src/script.ts"],
+  "exclude": ["build"]
+}

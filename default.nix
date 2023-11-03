@@ -38,6 +38,16 @@ in
 
       pkgs.go
       pkgs.gopls # Official language server for the Go language
+
+      pkgs.nodejs_18
+      pkgs.nodePackages.typescript
+      pkgs.nodePackages.eslint
+
+      pkgs.purescript
+      pkgs.spago
+      # pkgs.nodejs_18
+      pkgs.esbuild
+
     ];
 
 

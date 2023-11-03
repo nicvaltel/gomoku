@@ -8,10 +8,9 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Data.Aeson (FromJSON)
 import Data.Aeson.Types (ToJSON)
+import Domain.Types (Password)
 
 type Username = Text
-
-type Password = Text
 
 data RegStatus = Registered | Anonim
   deriving (Show, Eq, Ord)
