@@ -1,6 +1,5 @@
 "use strict";
 // npx eslint draw-board.ts
-// import { ConnId, Password, Handshake, WebSocketInputMessage, encodeWebSocketInputMessage, decodeWebSocketInputMessage, ExistingAnonConn } from './handshake';
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -320,65 +319,62 @@ var NonExisting = /** @class */ (function (_super) {
     return NonExisting;
 }(Handshake));
 // Add other WebSocketInputMessage subtypes here
-// Custom encoding function
-function encodeWebSocketInputMessage(message) {
-    if (message.type === 'HandshakeInMsg') {
-        var payload = message.payload;
-        if (payload instanceof ExistingAnonConn) {
-            // Handle ExistingAnonConn case
-            return JSON.stringify({
-                tag: 'HandshakeInMsg',
-                contents: {
-                    tag: 'ExistingAnonConn',
-                    contents: [
-                        { unConnId: payload.connId },
-                        { unUserId: payload.userId },
-                    ],
-                },
-            });
-        }
-        else if (payload instanceof ExistingRegisteredUserAndConn) {
-            // Handle ExistingRegisteredUserAndConn case
-            return JSON.stringify({
-                tag: 'HandshakeInMsg',
-                contents: {
-                    tag: 'ExistingRegisteredUserAndConn',
-                    unConnId: payload.connId,
-                    unUserId: payload.userId,
-                    unPassword: payload.password,
-                },
-            });
-        }
-        else if (payload instanceof ExistingRegisteredUserNewConn) {
-            // Handle ExistingRegisteredUserNewConn case
-            return JSON.stringify({
-                tag: 'HandshakeInMsg',
-                contents: {
-                    tag: 'ExistingRegisteredUserNewConn',
-                    unUserId: payload.userId,
-                    unPassword: payload.password,
-                },
-            });
-        }
-        else if (payload instanceof NonExisting) {
-            // Handle NonExisting case
-            return JSON.stringify({
-                tag: 'HandshakeInMsg',
-                contents: { tag: 'NonExisting' },
-            });
-        }
+function encodeHandshake(payload) {
+    var result = 'Handshake';
+    if (payload instanceof ExistingAnonConn) {
+        result += ';ExistingAnonConn';
+        result += ";".concat(payload.connId);
+        result += ";".concat(payload.userId);
     }
-    // Return an empty string if the message type is not recognized
-    return '';
+    else if (payload instanceof ExistingRegisteredUserAndConn) {
+        result += ';ExistingRegisteredUserAndConn';
+        result += ";".concat(payload.connId);
+        result += ";".concat(payload.userId);
+        result += ";".concat(payload.password);
+    }
+    else if (payload instanceof ExistingRegisteredUserNewConn) {
+        result += ';ExistingRegisteredUserNewConn';
+        result += ";".concat(payload.userId);
+        result += ";".concat(payload.password);
+    }
+    else if (payload instanceof NonExisting) {
+        result += ';NonExisting';
+    }
+    else {
+        // Handle unknown types here, or throw an error
+        result = '';
+    }
+    return result;
 }
-// ---
+function encodeWebSocketInputMessage(message) {
+    var result = '';
+    if (message.type === 'HandshakeInMsg') {
+        result = encodeHandshake(message.payload);
+    }
+    else {
+        result = '';
+    }
+    return result;
+}
 // // Example usages:
-var messageToEncode = {
+var messageToEncode1 = {
     type: 'HandshakeInMsg',
     payload: new ExistingAnonConn(777, 888),
 };
+var messageToEncode2 = {
+    type: 'HandshakeInMsg',
+    payload: new ExistingRegisteredUserAndConn(777, 888, "hello there!"),
+};
+var messageToEncode3 = {
+    type: 'HandshakeInMsg',
+    payload: new ExistingRegisteredUserNewConn(777, "hello there!"),
+};
+var messageToEncode4 = {
+    type: 'HandshakeInMsg',
+    payload: new NonExisting(),
+};
 // Encode the message to JSON
-var encodedMessage = encodeWebSocketInputMessage(messageToEncode);
+var encodedMessage = encodeWebSocketInputMessage(messageToEncode4);
 // ///////////////////////////////
 function startGameLoopIO(allGameData) {
     // sendMessageIO(allGameData.webSocket,'Init')
@@ -397,5 +393,3 @@ function startGameLoopIO(allGameData) {
 }
 var allGameData = initGameIO(gameConfig);
 startGameLoopIO(allGameData);
-// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}
-// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}

@@ -1,6 +1,4 @@
 // npx eslint draw-board.ts
-// import { ConnId, Password, Handshake, WebSocketInputMessage, encodeWebSocketInputMessage, decodeWebSocketInputMessage, ExistingAnonConn } from './handshake';
-
 
 enum StoneColor {
     Black,
@@ -404,9 +402,7 @@ function waitForSocketConnectionIO(socket : WebSocket, callback : () => void){
 
 
 
-
-
-// ///////////////////////////////
+/////////////////////////////////
 
 type ConnId = number;
 type UserId = number;
@@ -414,8 +410,8 @@ type Password = string;
 
 class Handshake {
   constructor(
-    public connId: ConnId,
-    public userId: UserId,
+    public connId?: ConnId,
+    public userId?: UserId,
     public password?: Password
   ) {}
 }
@@ -445,70 +441,66 @@ type WebSocketInputMessage =
   | { type: 'HandshakeInMsg'; payload: Handshake };
   // Add other WebSocketInputMessage subtypes here
 
-// Custom encoding function
-function encodeWebSocketInputMessage(message: WebSocketInputMessage): string {
-    if (message.type === 'HandshakeInMsg') {
-      const payload = message.payload;
-  
-      if (payload instanceof ExistingAnonConn) {
-        // Handle ExistingAnonConn case
-        return JSON.stringify({
-          tag: 'HandshakeInMsg',
-          contents: {
-            tag: 'ExistingAnonConn',
-            contents: [
-              { unConnId: payload.connId },
-              { unUserId: payload.userId },
-            ],
-          },
-        });
+function encodeHandshake(payload: Handshake): string {
+    let result = 'Handshake';
+    if (payload instanceof ExistingAnonConn) {
+        result += ';ExistingAnonConn';
+        result += `;${payload.connId}`;
+        result += `;${payload.userId}`;
       } else if (payload instanceof ExistingRegisteredUserAndConn) {
-        // Handle ExistingRegisteredUserAndConn case
-        return JSON.stringify({
-          tag: 'HandshakeInMsg',
-          contents: {
-            tag: 'ExistingRegisteredUserAndConn',
-            unConnId: payload.connId,
-            unUserId: payload.userId,
-            unPassword: payload.password,
-          },
-        });
+        result += ';ExistingRegisteredUserAndConn';
+        result += `;${payload.connId}`;
+        result += `;${payload.userId}`;
+        result += `;${payload.password}`;
       } else if (payload instanceof ExistingRegisteredUserNewConn) {
-        // Handle ExistingRegisteredUserNewConn case
-        return JSON.stringify({
-          tag: 'HandshakeInMsg',
-          contents: {
-            tag: 'ExistingRegisteredUserNewConn',
-            unUserId: payload.userId,
-            unPassword: payload.password,
-          },
-        });
+        result += ';ExistingRegisteredUserNewConn';
+        result += `;${payload.userId}`;
+        result += `;${payload.password}`;
       } else if (payload instanceof NonExisting) {
-        // Handle NonExisting case
-        return JSON.stringify({
-          tag: 'HandshakeInMsg',
-          contents: { tag: 'NonExisting' },
-        });
-      }
-    }
-  
-    // Return an empty string if the message type is not recognized
-    return '';
-  }
-  
+        result += ';NonExisting';
+      } else {
+        // Handle unknown types here, or throw an error
+        result = '';
+      }  
+    return result
+}
 
-// ---
+function encodeWebSocketInputMessage(message: WebSocketInputMessage): string {
+    let result = '';
+    if (message.type === 'HandshakeInMsg') {
+        result = encodeHandshake(message.payload);
+    } else {
+        result = '';
+    } 
+    return result;
+  }
 
 
 // // Example usages:
 
-const messageToEncode: WebSocketInputMessage = {
+const messageToEncode1: WebSocketInputMessage = {
     type: 'HandshakeInMsg',
     payload: new ExistingAnonConn(777, 888),
   };
-  
-  // Encode the message to JSON
-  const encodedMessage = encodeWebSocketInputMessage(messageToEncode);
+
+const messageToEncode2: WebSocketInputMessage = {
+    type: 'HandshakeInMsg',
+    payload: new ExistingRegisteredUserAndConn(777, 888,"hello there!"),
+  };
+
+const messageToEncode3: WebSocketInputMessage = {
+    type: 'HandshakeInMsg',
+    payload: new ExistingRegisteredUserNewConn(777, "hello there!"),
+  };
+
+  const messageToEncode4: WebSocketInputMessage = {
+    type: 'HandshakeInMsg',
+    payload: new NonExisting(),
+  };
+
+
+// Encode the message to JSON
+const encodedMessage = encodeWebSocketInputMessage(messageToEncode4);
   
 
 // ///////////////////////////////
@@ -543,10 +535,3 @@ function startGameLoopIO(allGameData: AllGameData): void {
 
 const allGameData = initGameIO(gameConfig);
 startGameLoopIO(allGameData)
-
-
-
-  
-// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}
-// {\"contents\":{\"contents\":[{\"unConnId\":777},{\"unUserId\":888}],\"tag\":\"ExistingAnonConn\"}, \"tag\":\"HandshakeInMsg\"}
-

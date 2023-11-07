@@ -1,19 +1,15 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Domain.Connection where
 
 import Domain.User (AnyUserId)
 import qualified Network.WebSockets as WS
 import Text.Printf (printf)
-import Data.Aeson (FromJSON)
-import Data.Aeson.Types (ToJSON)
-import GHC.Generics (Generic)
 
 newtype ConnId = ConnId {unConnId :: Int}
-  deriving (Show, Generic)
+  deriving (Show)
 
 data ConnStatus = NormalConnection | ConnectionNotFound
   deriving (Show)
@@ -42,8 +38,3 @@ class Monad m => ConnectionsRepo m where
 --   userIdFromConnectionId :: db -> ConnectionId -> IO (Maybe UserId)
 --   getConnStatus :: db -> ConnectionId -> IO ConnectionStatus
 --   nextAnonUserId :: db -> IO UserId
-
-
-instance FromJSON ConnId
-
-instance ToJSON ConnId

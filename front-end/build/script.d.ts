@@ -83,10 +83,10 @@ type ConnId = number;
 type UserId = number;
 type Password = string;
 declare class Handshake {
-    connId: ConnId;
-    userId: UserId;
+    connId?: number | undefined;
+    userId?: number | undefined;
     password?: string | undefined;
-    constructor(connId: ConnId, userId: UserId, password?: string | undefined);
+    constructor(connId?: number | undefined, userId?: number | undefined, password?: string | undefined);
 }
 declare class ExistingAnonConn extends Handshake {
     constructor(connId: ConnId, userId: UserId);
@@ -103,8 +103,12 @@ type WebSocketInputMessage = {
     type: 'HandshakeInMsg';
     payload: Handshake;
 };
+declare function encodeHandshake(payload: Handshake): string;
 declare function encodeWebSocketInputMessage(message: WebSocketInputMessage): string;
-declare const messageToEncode: WebSocketInputMessage;
+declare const messageToEncode1: WebSocketInputMessage;
+declare const messageToEncode2: WebSocketInputMessage;
+declare const messageToEncode3: WebSocketInputMessage;
+declare const messageToEncode4: WebSocketInputMessage;
 declare const encodedMessage: string;
 declare function startGameLoopIO(allGameData: AllGameData): void;
 declare const allGameData: AllGameData;
