@@ -15,19 +15,23 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+// MODULE script
 var StoneColor;
 (function (StoneColor) {
     StoneColor[StoneColor["Black"] = 0] = "Black";
     StoneColor[StoneColor["White"] = 1] = "White";
 })(StoneColor || (StoneColor = {}));
+var MessageProcessorState;
+(function (MessageProcessorState) {
+    MessageProcessorState[MessageProcessorState["MPSHandshake"] = 0] = "MPSHandshake";
+    MessageProcessorState[MessageProcessorState["MPSNormal"] = 1] = "MPSNormal";
+})(MessageProcessorState || (MessageProcessorState = {}));
 var gameConfig = {
     socketUrl: 'ws://127.0.0.1:1234',
     htmlCanvasName: 'goBoard',
     backgroundPath: 'images/wood_full_original.jpg',
     whiteStonePath: 'images/white_00.png',
     blackStonePath: 'images/black_00.png',
-    // whiteHolePath: 'images/white_hole.png',
-    // blackHolePath: 'images/black_hole.png',
     boardSize: 19,
     starPoints: [3 + 1, 9 + 1, 15 + 1],
 };
@@ -58,16 +62,10 @@ function initGameIO(cfg) {
     blackStone.src = cfg.blackStonePath;
     var whiteStone = new Image();
     whiteStone.src = cfg.whiteStonePath;
-    // const blackHole = new Image();
-    // blackHole.src = cfg.blackHolePath;
-    // const whiteHole = new Image();
-    // whiteHole.src = cfg.whiteHolePath;
     // Handle image loading
     background.onload = function () {
         whiteStone.onload = function () { };
         blackStone.onload = function () { };
-        // whiteHole.onload = () => { }
-        // blackHole.onload = () => { }
     };
     var canvases = {
         canvas: canvas,
@@ -79,8 +77,6 @@ function initGameIO(cfg) {
         backgroundImg: background,
         blackStoneImg: blackStone,
         whiteStoneImg: whiteStone,
-        // blackHoleImg: blackHole,
-        // whiteHoleImg: whiteHole,
     };
     var sizes = {
         gridSize: canvas.width / (cfg.boardSize + 1),
@@ -118,6 +114,7 @@ function initGameIO(cfg) {
         canvases: canvases,
         assets: assets,
         gameLoopId: null,
+        messageProcessorState: MessageProcessorState.MPSHandshake,
     };
     document.addEventListener('mousemove', function (event) {
         // Retrieve the mouse cursor coordinates from the event object
@@ -125,7 +122,7 @@ function initGameIO(cfg) {
         inputBuffer.mouseX = event.clientX - canvasRect.left; // X-coordinate relative to the viewport
         inputBuffer.mouseY = event.clientY - canvasRect.top; // Y-coordinate relative to the viewport
         // Log or use the cursor coordinates
-        console.log("Mouse X: ".concat(inputBuffer.mouseX, ", Mouse Y: ").concat(inputBuffer.mouseY));
+        // console.log(`Mouse X: ${inputBuffer.mouseX}, Mouse Y: ${inputBuffer.mouseY}`);
     });
     // Event handler when the WebSocket connection is opened
     webSocket.addEventListener('open', function (event) {
@@ -137,6 +134,8 @@ function initGameIO(cfg) {
     webSocket.addEventListener('message', function (event) {
         var message = event.data;
         console.log('Message from server:', message);
+        console.log(decodeWebSocketOutputMessage(message));
+        allGameData.messageProcessorState = messageProcessor(allGameData, message);
         // Handle the received message as needed
         // You can update the canvas or perform other actions here
     });
@@ -156,6 +155,7 @@ function initGameIO(cfg) {
     allGameData.boardState.boardMatrix[19 - 1][1 - 1] = StoneColor.White;
     return allGameData;
 }
+// MODULE render
 // Draw grid lines
 function drawGridIO(ctx, sizes, canvas) {
     var gridSize = sizes.gridSize, borderSize = sizes.borderSize;
@@ -282,6 +282,42 @@ function waitForSocketConnectionIO(socket, callback) {
         }
     }, 5); // wait 5 milisecond for the connection...
 }
+// MODULE cookie
+var keyUserId = 'keyUserId';
+var keyConnId = 'keyConnId';
+var keyTempAnonPasswd = 'keyTempAnonPasswd';
+var keyUserRegOrAnon = 'keyUserRegOrAnon';
+// function setCookie(key: string, value: string, expirationDays: number = 365) {
+//     const date = new Date();
+//     date.setTime(date.getTime() + expirationDays * 24 * 60 * 60 * 1000); // Calculate expiration time
+//     const expires = `expires=${date.toUTCString()}`;
+//     document.cookie = `${key}=${value}; ${expires}; path=/`;
+// }
+function setCookie(key, value, expirationDays) {
+    if (expirationDays === void 0) { expirationDays = 365; }
+    var date = new Date();
+    date.setTime(date.getTime() + expirationDays * 24 * 60 * 60 * 1000); // Calculate expiration time
+    var expires = "expires=".concat(date.toUTCString());
+    // Set the "SameSite" attribute to "None" for cross-site requests
+    var sameSite = 'SameSite=None';
+    // Set the "Secure" attribute to ensure it's sent over secure connections
+    var secure = 'Secure';
+    // Combine all attributes
+    var cookieAttributes = [expires, sameSite, secure, 'path=/'];
+    document.cookie = "".concat(key, "=").concat(value, "; ").concat(cookieAttributes.join('; '));
+}
+function getCookie(key) {
+    var cookies = document.cookie.split(';');
+    for (var _i = 0, cookies_1 = cookies; _i < cookies_1.length; _i++) {
+        var cookie = cookies_1[_i];
+        var _a = cookie.split('='), cookieKey = _a[0], cookieValue = _a[1];
+        var trimmedKey = cookieKey.trim();
+        if (trimmedKey === key) {
+            return decodeURIComponent(cookieValue);
+        }
+    }
+    return null;
+}
 var Handshake = /** @class */ (function () {
     function Handshake(connId, userId, password) {
         this.connId = connId;
@@ -292,8 +328,8 @@ var Handshake = /** @class */ (function () {
 }());
 var ExistingAnonConn = /** @class */ (function (_super) {
     __extends(ExistingAnonConn, _super);
-    function ExistingAnonConn(connId, userId) {
-        return _super.call(this, connId, userId) || this;
+    function ExistingAnonConn(connId, userId, password) {
+        return _super.call(this, connId, userId, password) || this;
     }
     return ExistingAnonConn;
 }(Handshake));
@@ -307,7 +343,7 @@ var ExistingRegisteredUserAndConn = /** @class */ (function (_super) {
 var ExistingRegisteredUserNewConn = /** @class */ (function (_super) {
     __extends(ExistingRegisteredUserNewConn, _super);
     function ExistingRegisteredUserNewConn(userId, password) {
-        return _super.call(this, 0, userId, password) || this;
+        return _super.call(this, '', userId, password) || this;
     }
     return ExistingRegisteredUserNewConn;
 }(Handshake));
@@ -325,6 +361,7 @@ function encodeHandshake(payload) {
         result += ';ExistingAnonConn';
         result += ";".concat(payload.connId);
         result += ";".concat(payload.userId);
+        result += ";".concat(payload.password);
     }
     else if (payload instanceof ExistingRegisteredUserAndConn) {
         result += ';ExistingRegisteredUserAndConn';
@@ -356,40 +393,164 @@ function encodeWebSocketInputMessage(message) {
     }
     return result;
 }
-// // Example usages:
-var messageToEncode1 = {
-    type: 'HandshakeInMsg',
-    payload: new ExistingAnonConn(777, 888),
-};
-var messageToEncode2 = {
-    type: 'HandshakeInMsg',
-    payload: new ExistingRegisteredUserAndConn(777, 888, "hello there!"),
-};
-var messageToEncode3 = {
-    type: 'HandshakeInMsg',
-    payload: new ExistingRegisteredUserNewConn(777, "hello there!"),
-};
-var messageToEncode4 = {
-    type: 'HandshakeInMsg',
-    payload: new NonExisting(),
-};
-// Encode the message to JSON
-var encodedMessage = encodeWebSocketInputMessage(messageToEncode4);
-// ///////////////////////////////
+function decodeLoginLogoutOutMsg(input) {
+    var parts = input.split(';');
+    var msgType = parts[0];
+    if (msgType === 'AskForExistingUser') {
+        return 'AskForExistingUser';
+    }
+    else if (msgType === 'RegisterError') {
+        return 'RegisterError';
+    }
+    else if (msgType === 'RegisteredSuccessfully' && parts.length === 3) {
+        var userId = parts[1];
+        var connId = parts[2];
+        return ['RegisteredSuccessfully', userId, connId];
+    }
+    else if (msgType === 'LoginError') {
+        return 'LoginError';
+    }
+    else if (msgType === 'LoginSuccessfully' && parts.length === 3) {
+        var userId = parts[1];
+        var connId = parts[2];
+        return ['LoginSuccessfully', userId, connId];
+    }
+    else if (msgType === 'LogoutSuccessfully' && parts.length === 3) {
+        var userId = parts[1];
+        var connId = parts[2];
+        return ['LogoutSuccessfully', userId, connId];
+    }
+    else if (msgType === 'NewAnonUser' && parts.length === 4) {
+        var userId = parts[1];
+        var connId = parts[2];
+        var passwd = parts[3];
+        return ['NewAnonUser', userId, connId, passwd];
+    }
+    else if (msgType === 'OldAnonUser' && parts.length === 3) {
+        var userId = parts[1];
+        var connId = parts[2];
+        return ['OldAnonUser', userId, connId];
+    }
+    return null; // Invalid input or unrecognized message type
+}
+function decodeWebSocketOutputMessage(input) {
+    var parts = input.split(';');
+    var msgType = parts[0];
+    if (msgType === 'LoginLogout') {
+        var loginLogoutMsg = decodeLoginLogoutOutMsg(parts.slice(1).join(';'));
+        if (loginLogoutMsg) {
+            return { type: 'LoginLogoutOutMsg', payload: loginLogoutMsg };
+        }
+    }
+    return null; // Invalid input or unrecognized message type
+}
+// MODULE handshake
+function messageProcessorLoginLogout(allGameData, msg) {
+    var newState = allGameData.messageProcessorState;
+    if (msg === 'AskForExistingUser') {
+        var connId = getCookie(keyConnId);
+        var userId = getCookie(keyUserId);
+        var password = getCookie(keyTempAnonPasswd);
+        var regOrAnon = getCookie(keyUserRegOrAnon);
+        if (regOrAnon && regOrAnon === 'RegUser' && connId && userId && password) {
+            var messageAns = {
+                type: 'HandshakeInMsg',
+                payload: new ExistingRegisteredUserAndConn(connId, userId, password),
+            };
+            sendMessageIO(allGameData.webSocket, encodeWebSocketInputMessage(messageAns));
+        }
+        else if (regOrAnon && regOrAnon === 'AnonUser' && connId && userId && password) {
+            var messageAns = {
+                type: 'HandshakeInMsg',
+                payload: new ExistingAnonConn(connId, userId, password),
+            };
+            sendMessageIO(allGameData.webSocket, encodeWebSocketInputMessage(messageAns));
+        }
+        else if (!connId && regOrAnon && regOrAnon === 'RegUser' && userId && password) {
+            var messageAns = {
+                type: 'HandshakeInMsg',
+                payload: new ExistingRegisteredUserNewConn(userId, password),
+            };
+            sendMessageIO(allGameData.webSocket, encodeWebSocketInputMessage(messageAns));
+        }
+        else {
+            var messageAns = {
+                type: 'HandshakeInMsg',
+                payload: new NonExisting,
+            };
+            sendMessageIO(allGameData.webSocket, encodeWebSocketInputMessage(messageAns));
+        }
+    }
+    else if (msg[0] === 'NewAnonUser') {
+        setCookie(keyUserId, msg[1].toString());
+        setCookie(keyConnId, msg[2].toString());
+        setCookie(keyTempAnonPasswd, msg[3].toString());
+        setCookie(keyUserRegOrAnon, 'AnonUser');
+        var xxx = getCookie(keyTempAnonPasswd);
+        console.log("SALAM");
+        console.log(xxx);
+    }
+    else if (msg[0] === 'OldAnonUser') {
+        setCookie(keyUserId, msg[1].toString());
+        setCookie(keyConnId, msg[2].toString());
+        setCookie(keyUserRegOrAnon, 'AnonUser');
+    }
+    return newState;
+}
+function messageProcessor(allGameData, message) {
+    var wsMsg = decodeWebSocketOutputMessage(message);
+    if (wsMsg === null) {
+        // TODO RESEND MSG
+        return allGameData.messageProcessorState;
+    }
+    else {
+        if (wsMsg.type === 'LoginLogoutOutMsg') {
+            return messageProcessorLoginLogout(allGameData, wsMsg.payload);
+        }
+        else {
+            return allGameData.messageProcessorState;
+        }
+    }
+}
+// MDULE run-script
+// const messageToEncode1: WebSocketInputMessage = {
+//     type: 'HandshakeInMsg',
+//     payload: new ExistingAnonConn(777, 888),
+//   };
+// const messageToEncode2: WebSocketInputMessage = {
+//     type: 'HandshakeInMsg',
+//     payload: new ExistingRegisteredUserAndConn(777, 888,"hello there!"),
+//   };
+// const messageToEncode3: WebSocketInputMessage = {
+//     type: 'HandshakeInMsg',
+//     payload: new ExistingRegisteredUserNewConn(777, "hello there!"),
+//   };
+//   const messageToEncode4: WebSocketInputMessage = {
+//     type: 'HandshakeInMsg',
+//     payload: new NonExisting(),
+//   };
 function startGameLoopIO(allGameData) {
-    // sendMessageIO(allGameData.webSocket,'Init')
-    sendMessageIO(allGameData.webSocket, encodedMessage);
-    // console.log("messageToEncode = ")
-    // console.log(messageToEncode)
-    // console.log("encodedMessage = ")
-    // console.log(encodedMessage)
-    // // console.log("decodedMessage = ")
-    // // console.log(decodedMessage)
+    var connId = getCookie(keyConnId);
+    var userId = getCookie(keyUserId);
+    var password = getCookie(keyTempAnonPasswd);
+    var regOrAnon = getCookie(keyUserRegOrAnon);
+    console.log(connId, userId, password, regOrAnon);
+    // const encodedInMessage = encodeWebSocketInputMessage(messageToEncode4);
+    // // sendMessageIO(allGameData.webSocket,'Init')
+    // sendMessageIO(allGameData.webSocket,encodedInMessage)
+    // const decodedMessage1 = decodeWebSocketOutputMessage('LoginLogout;RegisteredSuccessfully;123;456');
+    // console.log(decodedMessage1); // Output: { type: 'LoginLogoutOutMsg', payload: ['RegisteredSuccessfully', 123, 456] }
+    // const decodedMessage2 = decodeLoginLogoutOutMsg('RegisteredSuccessfully;123;456');
+    // console.log(decodedMessage2); // Output: ['RegisteredSuccessfully', 123, 456]
     if (!allGameData.gameLoopId) {
         allGameData.gameLoopId = setInterval(function () {
             gameLoopIO(allGameData);
         }, 1000 / 60); // Set the desired frame rate (e.g., 60 FPS)
     }
 }
-var allGameData = initGameIO(gameConfig);
-startGameLoopIO(allGameData);
+// Module entryPoint
+// DOMContentLoaded uses for enshure that cookies are loaded
+document.addEventListener('DOMContentLoaded', function () {
+    var allGameData = initGameIO(gameConfig);
+    startGameLoopIO(allGameData);
+});

@@ -18,7 +18,7 @@ import Domain.Connection (ConnId (..), ConnState (..), ConnStatus (..), Connecti
 import Domain.MessagesInput
 import Domain.MessagesOutput
 import Domain.Types
-import Domain.User (UsersRepo (..))
+import Domain.User (UsersRepo (..), User (password))
 import qualified Network.WebSockets as WS
 import Params (_DEBUG_MODE)
 import Text.Printf (printf)
@@ -44,7 +44,7 @@ handshake conn = do
   sendOutMsg "" conn (LoginLogoutOutMsg AskForExistingUser)
   inMsg <- receiveInMsg "" conn
   case inMsg of
-    HandshakeInMsg (ExistingAnonConn connId uId) -> (liftIO $ putStrLn "TODO remove it -- ExistingAnonConn") >> oldAnonUser connId uId
+    HandshakeInMsg (ExistingAnonConn connId uId password) -> (liftIO $ putStrLn "TODO remove it -- ExistingAnonConn") >> oldAnonUser connId uId password
     HandshakeInMsg (ExistingRegisteredUserAndConn connId uId pass) -> (liftIO $ putStrLn "TODO remove it -- ExistingRegisteredUserAndConn") >> regUserOldConn connId uId pass
     HandshakeInMsg (ExistingRegisteredUserNewConn uId pass) -> (liftIO $ putStrLn "TODO remove it -- ExistingRegisteredUserNewConn") >> regUserNewConn uId pass
     _ -> newAnonUser
@@ -76,18 +76,24 @@ handshake conn = do
       sendOutMsg connId conn (LoginLogoutOutMsg $ LoginSuccessfully uId connId)
       pure connResult
 
-    oldAnonUser connId uId = do
+    oldAnonUser connId uId password = do
       mbConnState <- findConnById connId
       case mbConnState of
         Just connState@ConnState {connStateUserId = Left userId} | userId == uId -> do
-          sendOutMsg connId conn (LoginLogoutOutMsg $ NewAnonUser userId connId)
-          updateConn connId connState {connStatus = NormalConnection}
+          passwdCheck <- checkAnonPassword uId password
+          if passwdCheck
+            then do
+              sendOutMsg connId conn (LoginLogoutOutMsg $ OldAnonUser userId connId)
+              updateConn connId connState {connStatus = NormalConnection}
+            else do
+              sendOutMsg connId conn (LoginLogoutOutMsg RegisterError)
+              newAnonUser
         _ -> newAnonUser
 
     newAnonUser = do
-      userIdAnon <- addAnonUser
+      (userIdAnon, pwd) <- addAnonUser
       connResult@(connId, _) <- addConn conn (Left userIdAnon) NormalConnection
-      sendOutMsg connId conn (LoginLogoutOutMsg $ NewAnonUser userIdAnon connId)
+      sendOutMsg connId conn (LoginLogoutOutMsg $ NewAnonUser userIdAnon connId pwd)
       pure connResult
 
 threadMessageListener :: WSSApp m => ConnId -> ConnState -> m ()

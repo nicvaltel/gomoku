@@ -2,6 +2,10 @@ declare enum StoneColor {
     Black = 0,
     White = 1
 }
+declare enum MessageProcessorState {
+    MPSHandshake = 0,
+    MPSNormal = 1
+}
 interface GameConfig {
     socketUrl: string;
     htmlCanvasName: string;
@@ -66,6 +70,7 @@ interface AllGameData {
     canvases: Canvases;
     assets: GameAssets;
     gameLoopId: number | null;
+    messageProcessorState: MessageProcessorState;
 }
 declare function initGameIO(cfg: GameConfig): AllGameData;
 declare function drawGridIO(ctx: CanvasRenderingContext2D, sizes: Sizes, canvas: HTMLCanvasElement): void;
@@ -79,17 +84,24 @@ declare function renderStateIO(allGameData: AllGameData, canvases: Canvases, ass
 declare function gameLoopIO(allGameData: AllGameData): void;
 declare function sendMessageIO(ws: WebSocket, msg: string): void;
 declare function waitForSocketConnectionIO(socket: WebSocket, callback: () => void): void;
-type ConnId = number;
-type UserId = number;
+declare const keyUserId = "keyUserId";
+declare const keyConnId = "keyConnId";
+declare const keyTempAnonPasswd = "keyTempAnonPasswd";
+declare const keyUserRegOrAnon = "keyUserRegOrAnon";
+declare function setCookie(key: string, value: string, expirationDays?: number): void;
+declare function getCookie(key: string): string | null;
+type ConnId = string;
+type UserId = string;
 type Password = string;
+type UserRegOrAnon = 'RegUser' | 'AnonUser';
 declare class Handshake {
-    connId?: number | undefined;
-    userId?: number | undefined;
+    connId?: string | undefined;
+    userId?: string | undefined;
     password?: string | undefined;
-    constructor(connId?: number | undefined, userId?: number | undefined, password?: string | undefined);
+    constructor(connId?: string | undefined, userId?: string | undefined, password?: string | undefined);
 }
 declare class ExistingAnonConn extends Handshake {
-    constructor(connId: ConnId, userId: UserId);
+    constructor(connId: ConnId, userId: UserId, password: Password);
 }
 declare class ExistingRegisteredUserAndConn extends Handshake {
     constructor(connId: ConnId, userId: UserId, password: Password);
@@ -105,10 +117,13 @@ type WebSocketInputMessage = {
 };
 declare function encodeHandshake(payload: Handshake): string;
 declare function encodeWebSocketInputMessage(message: WebSocketInputMessage): string;
-declare const messageToEncode1: WebSocketInputMessage;
-declare const messageToEncode2: WebSocketInputMessage;
-declare const messageToEncode3: WebSocketInputMessage;
-declare const messageToEncode4: WebSocketInputMessage;
-declare const encodedMessage: string;
+type WebSocketOutputMessage = {
+    type: 'LoginLogoutOutMsg';
+    payload: LoginLogoutMsg;
+};
+type LoginLogoutMsg = 'AskForExistingUser' | 'RegisterError' | ['RegisteredSuccessfully', UserId, ConnId] | 'LoginError' | ['LoginSuccessfully', UserId, ConnId] | ['LogoutSuccessfully', UserId, ConnId] | ['NewAnonUser', UserId, ConnId, Password] | ['OldAnonUser', UserId, ConnId];
+declare function decodeLoginLogoutOutMsg(input: string): LoginLogoutMsg | null;
+declare function decodeWebSocketOutputMessage(input: string): WebSocketOutputMessage | null;
+declare function messageProcessorLoginLogout(allGameData: AllGameData, msg: LoginLogoutMsg): MessageProcessorState;
+declare function messageProcessor(allGameData: AllGameData, message: string): MessageProcessorState;
 declare function startGameLoopIO(allGameData: AllGameData): void;
-declare const allGameData: AllGameData;

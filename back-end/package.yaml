@@ -42,6 +42,7 @@ dependencies:
 - template-haskell
 - postgresql-simple
 - postgresql-simple-migration
+- string-random
 # - record-dot-preprocessor
 # - aeson
 

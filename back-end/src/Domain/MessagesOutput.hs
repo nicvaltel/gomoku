@@ -7,10 +7,11 @@ module Domain.MessagesOutput where
 import qualified Data.ByteString.Char8 as BSC8
 import Domain.Connection (ConnId (..))
 import Domain.Room (RoomId (..), RoomStatus (..))
-import Domain.Types (MessageStr)
-import Domain.User (RegStatus (Anonim, Registered), UserId (..))
+import Domain.Types (MessageStr, Password)
+import Domain.User (RegStatus (Anonim, Registered), UserId (..), User (password))
 import qualified Network.WebSockets as WS
 import Utils.Utils
+import Data.Text.Encoding (encodeUtf8)
 
 data WebSocketOutputMessage
   = ResendIncorrectOutMsg
@@ -30,13 +31,14 @@ data LoginLogoutMsg
   | LoginError
   | LoginSuccessfully (UserId 'Registered) ConnId
   | LogoutSuccessfully (UserId 'Anonim) ConnId
-  | NewAnonUser (UserId 'Anonim) ConnId
+  | NewAnonUser (UserId 'Anonim) ConnId Password
+  | OldAnonUser (UserId 'Anonim) ConnId
   deriving (Show)
 
 toWebSocketOutputMessage :: WebSocketOutputMessage -> MessageStr
-toWebSocketOutputMessage ResendIncorrectOutMsg = "ResendIncorrectOutMsg"
-toWebSocketOutputMessage (GameRoomOutMsg roomMsg) = "GameRoomOutMsg;" <> toRoomMsg roomMsg
-toWebSocketOutputMessage (LoginLogoutOutMsg loginLogoutMsg) = "GameRoomOutMsg;" <> toLoginLogoutOutMsg loginLogoutMsg
+toWebSocketOutputMessage ResendIncorrectOutMsg = "ResendIncorrect"
+toWebSocketOutputMessage (GameRoomOutMsg roomMsg) = "GameRoom;" <> toRoomMsg roomMsg
+toWebSocketOutputMessage (LoginLogoutOutMsg loginLogoutMsg) = "LoginLogout;" <> toLoginLogoutOutMsg loginLogoutMsg
 
 toLoginLogoutOutMsg :: LoginLogoutMsg -> MessageStr
 toLoginLogoutOutMsg AskForExistingUser = "AskForExistingUser"
@@ -45,7 +47,8 @@ toLoginLogoutOutMsg (RegisteredSuccessfully (UserId userId) (ConnId connId)) = "
 toLoginLogoutOutMsg LoginError = "LoginError"
 toLoginLogoutOutMsg (LoginSuccessfully (UserId userId) (ConnId connId)) = "LoginSuccessfully;" <> BSC8.pack (show userId) <> ";" <> BSC8.pack (show connId)
 toLoginLogoutOutMsg (LogoutSuccessfully (UserId userId) (ConnId connId)) = "LogoutSuccessfully;" <> BSC8.pack (show userId) <> ";" <> BSC8.pack (show connId)
-toLoginLogoutOutMsg (NewAnonUser (UserId userId) (ConnId connId)) = "NewAnonUser;" <> BSC8.pack (show userId) <> ";" <> BSC8.pack (show connId)
+toLoginLogoutOutMsg (NewAnonUser (UserId userId) (ConnId connId) passwd) = "NewAnonUser;" <> BSC8.pack (show userId) <> ";" <> BSC8.pack (show connId) <> ";" <> encodeUtf8 passwd
+toLoginLogoutOutMsg (OldAnonUser (UserId userId) (ConnId connId)) = "OldAnonUser;" <> BSC8.pack (show userId) <> ";" <> BSC8.pack (show connId)
 
 toRoomMsg :: RoomMsg -> MessageStr
 toRoomMsg (GameRoomCreated (RoomId roomId)) = "GameRoomCreated;" <> BSC8.pack (show roomId)

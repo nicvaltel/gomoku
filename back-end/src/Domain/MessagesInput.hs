@@ -32,7 +32,7 @@ newtype GameAction = GameAction MessageStr
   deriving (Show)
 
 data Handshake
-  = ExistingAnonConn ConnId (UserId 'Anonim)
+  = ExistingAnonConn ConnId (UserId 'Anonim) Password
   | ExistingRegisteredUserAndConn ConnId (UserId 'Registered) Password
   | ExistingRegisteredUserNewConn (UserId 'Registered) Password
   | NonExisting
@@ -54,10 +54,10 @@ toWebSocketInputMessage bstr =
 
 toHandshake :: [MessageStr] -> Maybe Handshake
 toHandshake = \case
-  ["ExistingAnonConn", connId, userId] -> do
+  ["ExistingAnonConn", connId, userId, password] -> do
     cId :: Int <- readMaybe $ BSC8.unpack connId
     uId :: Int <- readMaybe $ BSC8.unpack userId
-    pure (ExistingAnonConn (ConnId cId) (UserId uId))
+    pure (ExistingAnonConn (ConnId cId) (UserId uId) (decodeUtf8 password))
   ["ExistingRegisteredUserAndConn", connId, userId, password] -> do
     cId :: Int <- readMaybe $ BSC8.unpack connId
     uId :: Int <- readMaybe $ BSC8.unpack userId

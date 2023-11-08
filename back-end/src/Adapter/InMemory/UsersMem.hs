@@ -14,6 +14,7 @@ module Adapter.InMemory.UsersMem
     deleteRegUser,
     deleteAnonUser,
     emptyUserDB,
+    checkAnonPassword
   )
 where
 
@@ -32,6 +33,7 @@ import Domain.User
 import qualified Domain.User as DU
 import Utils.Utils (tshow)
 import Domain.Types (Password)
+import Text.StringRandom(stringRandomIO)
 
 type UsersDB = TVar UsersIntMap
 
@@ -52,6 +54,8 @@ emptyUserDB =
         maxAnonId = UserId 0
       }
 
+
+
 addRegUser :: (DU.UsersRepo m, InMemory reader m) => Username -> Password -> m (Maybe (UserId 'Registered))
 addRegUser username password = do
   mbUserId <- DU.addRegUserToDB username password
@@ -65,14 +69,15 @@ addRegUser username password = do
         writeTVar tvar newUsersMap
         pure (Just userId)
 
-addAnonUser :: InMemory reader m => m (UserId 'Anonim)
+addAnonUser :: InMemory reader m => m (UserId 'Anonim, Password)
 addAnonUser = do
   tvar <- asks getter
+  pwd <- liftIO $ stringRandomIO "[A-Za-z0-9]{8}"
   liftIO $ atomically $ do
     usersMap :: UsersIntMap <- readTVar tvar
-    let (newUsersMap, newUserId) = addAnonUser' "Anon" usersMap
+    let (newUsersMap, newUserId) = addAnonUser' pwd usersMap
     writeTVar tvar newUsersMap
-    pure newUserId
+    pure (newUserId, pwd)
 
 findAnyUserById :: InMemory reader m => AnyUserId -> m (Maybe (Either (User 'Anonim) (User 'Registered)))
 findAnyUserById anyUid = do
@@ -104,21 +109,31 @@ deleteAnonUser uId = do
     let newUsersMap = deleteAnonUser' uId usersMap
     writeTVar tvar newUsersMap
 
+checkAnonPassword :: (DU.UsersRepo m, InMemory reader m) => UserId 'Anonim -> Password -> m Bool
+checkAnonPassword (UserId userId) pwd = do
+  tvar <- asks getter
+  usersMap :: UsersIntMap <- liftIO $ readTVarIO tvar
+  let mbUser = IntMap.lookup userId (anonUsers usersMap)
+  case mbUser of
+    Nothing -> pure False
+    Just User{password} -> pure (password == pwd)
+
 addRegUser' :: UserId 'Registered -> Username -> UsersIntMap -> UsersIntMap
 addRegUser' userUserId@(UserId uId) userName inputMap@UsersIntMap {regUsers} =
   let newUser = User {userUserId, userName}
       newRegUsers = IntMap.insert uId newUser regUsers
    in inputMap {regUsers = newRegUsers}
 
-addAnonUser' :: Username -> UsersIntMap -> (UsersIntMap, UserId 'Anonim)
-addAnonUser' username inputMap =
+addAnonUser' :: Password -> UsersIntMap -> (UsersIntMap, UserId 'Anonim)
+addAnonUser' pwd inputMap =
   let anonUsers_ = anonUsers inputMap
       uId@(UserId maxAnonId_) = maxAnonId inputMap
-      newUserName = username <> tshow maxAnonId_
-      newUser = User {userUserId = uId, userName = newUserName}
+      newUser = User {userUserId = uId, userName = "", password = pwd}
       newAnonUsers = IntMap.insert maxAnonId_ newUser anonUsers_
       newIntMap = inputMap {anonUsers = newAnonUsers, maxAnonId = UserId (maxAnonId_ + 1)}
    in (newIntMap, uId)
+
+
 
 findAnyUser' :: AnyUserId -> UsersIntMap -> Maybe (Either (User 'Anonim) (User 'Registered))
 findAnyUser' (Left userId) usersMap = Left <$> findAnonUser' userId usersMap

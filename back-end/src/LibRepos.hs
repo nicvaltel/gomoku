@@ -38,6 +38,7 @@ instance UsersRepo App where
   deleteRegUser = UM.deleteRegUser
   deleteAnonUser = UM.deleteAnonUser
   checkPassword = UPG.checkPassword
+  checkAnonPassword = UM.checkAnonPassword
   addRegUserToDB = UPG.addRegUserToDB
 
 instance ConnectionsRepo App where
