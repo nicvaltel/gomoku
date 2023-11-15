@@ -17,6 +17,9 @@ back-end/src/HSPG/
 front-end/go-assets/
 front-end/node_modules/
 front-end/script.js
+front-end/.spago
+front-end/output
+front-end_back
 # front-end/.eslintrc.js
 # front-end/package.json
 # front-end/package-lock.json

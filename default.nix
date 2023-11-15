@@ -43,9 +43,10 @@ in
       pkgs.nodePackages.typescript
       pkgs.nodePackages.eslint
 
+      pkgs.nodePackages.live-server
+
       pkgs.purescript
       pkgs.spago
-      # pkgs.nodejs_18
       pkgs.esbuild
 
     ];
