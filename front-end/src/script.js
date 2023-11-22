@@ -3,7 +3,10 @@
 
 
 import('../output/MessageProcessor/index.js').then(MessageProcessor => {
+import('../output/GameProcessor/index.js').then(GameProcessor => {
 import('./cookies.js').then(Cookies => {
+import('./render.js').then(Render => {
+const { initRenderIO, renderConfig, renderStateIO, initGameState } = Render;    
 const { messageProcessor, updateConnectionConfig } = MessageProcessor;
 const { setCookie, getCookie, keyUserId, keyConnId, keyTempAnonPasswd, keyUserRegOrAnon } = Cookies;
 
@@ -16,9 +19,23 @@ var connectionConfig = {
     tempAnonPasswd : '',
 }
 
+var inputBuffer = {
+    mouseX: 0,
+    mouseY: 0,
+    canvasWidth: 0,
+    canvasHeight: 0,
+};
+
 var appData = {
-    connConfig : connectionConfig,
+    connConf : connectionConfig,
     updateCookieFlag : false,
+    renderConf : renderConfig,
+    renderData : null,
+    gameLoopId: null,
+    gameState: null,
+    inputBuffer: inputBuffer,
+    inputData: getInputDataIO(inputBuffer),
+    
     // htmlCanvasName: 'goBoard',
     // backgroundPath: 'images/wood_full_original.jpg',
     // whiteStonePath: 'images/white_00.png',
@@ -29,18 +46,18 @@ var appData = {
 
 
 function loadCookies(appData){
-    appData.connConfig.userId = getCookie(keyUserId);
-    appData.connConfig.connId = getCookie(keyConnId);
-    appData.connConfig.userRegOrAnon = getCookie(keyUserRegOrAnon);
-    appData.connConfig.tempAnonPasswd = getCookie(keyTempAnonPasswd);
+    appData.connConf.userId = getCookie(keyUserId);
+    appData.connConf.connId = getCookie(keyConnId);
+    appData.connConf.userRegOrAnon = getCookie(keyUserRegOrAnon);
+    appData.connConf.tempAnonPasswd = getCookie(keyTempAnonPasswd);
 }
 
 function saveCookies(appData){
     if (appData.updateCookieFlag) {
-        setCookie(keyUserId,appData.connConfig.userId);
-        setCookie(keyConnId,appData.connConfig.connId);
-        setCookie(keyUserRegOrAnon,appData.connConfig.userRegOrAnon);
-        setCookie(keyTempAnonPasswd,appData.connConfig.tempAnonPasswd);
+        setCookie(keyUserId,appData.connConf.userId);
+        setCookie(keyConnId,appData.connConf.connId);
+        setCookie(keyUserRegOrAnon,appData.connConf.userRegOrAnon);
+        setCookie(keyTempAnonPasswd,appData.connConf.tempAnonPasswd);
         appData.updateCookieFlag = false;
     }
 }
@@ -48,7 +65,7 @@ function saveCookies(appData){
 
 function initWebSocketIO(appData){
     // Create a new WebSocket object
-    const socket = new WebSocket(appData.connConfig.webSocketUrl);
+    const socket = new WebSocket(appData.connConf.webSocketUrl);
 
     // Connection opened
     socket.addEventListener('open', (event) => {
@@ -95,10 +112,32 @@ function initWebSocketIO(appData){
 }
 
 
+function getInputDataIO(inputBuffer) {
+    var inputData = {
+        mouseX: inputBuffer.mouseX,
+        mouseY: inputBuffer.mouseY,
+        canvasWidth: inputBuffer.canvasWidth,
+        canvasHeight: inputBuffer.canvasHeight,
+    };
+    return inputData;
+}
+
 
 function initGameIO(appData) {
+
+    document.addEventListener('mousemove', function (event) {
+        // Retrieve the mouse cursor coordinates from the event object
+        var canvasRect = appData.renderData.canvases.canvas.getBoundingClientRect();
+        inputBuffer.mouseX = event.clientX - canvasRect.left; // X-coordinate relative to the viewport
+        inputBuffer.mouseY = event.clientY - canvasRect.top; // Y-coordinate relative to the viewport
+        // Log or use the cursor coordinates
+        console.log(`Mouse X: ${inputBuffer.mouseX}, Mouse Y: ${inputBuffer.mouseY}`);
+    });
+
     loadCookies(appData);
-    initWebSocketIO(appData, messageProcessor);
+    appData.renderData = initRenderIO(appData.renderConf);
+    appData.gameState = initGameState(appData.renderConf);
+    initWebSocketIO(appData, messageProcessor);    
 }
 
 
@@ -112,11 +151,11 @@ function sendWSMessageIO(ws, msg) {
 
 
 
-function gameLoopIO(allGameData) {
-    // allGameData.inputData = getInputDataIO(allGameData.inputBuffer);
-    // allGameData = processGameLogic(allGameData);
-    // renderStateIO(allGameData, allGameData.canvases, allGameData.assets, allGameData.sizes, allGameData.inputData);
-}
+// function gameLoopIO(allGameData) {
+//     // allGameData.inputData = getInputDataIO(allGameData.inputBuffer);
+//     // allGameData = processGameLogic(allGameData);
+//     // renderStateIO(allGameData, allGameData.canvases, allGameData.assets, allGameData.sizes, allGameData.inputData);
+// }
 
 function sendMessageIO(ws, msg) {
     // Wait until the state of the socket is not ready and send the message when it is...
@@ -157,12 +196,36 @@ function waitForSocketConnectionIO(socket, callback) {
 //     }
 // }
 
+
+
+// Module GameLoop 
+
+function gameLoopIO(appData) {
+    appData.inputData = getInputDataIO(appData.inputBuffer);
+    // findNearestToMouseCoord
+    // allGameData = processGameLogic(allGameData);
+    // renderStateIO(allGameData, allGameData.canvases, allGameData.assets, allGameData.sizes, allGameData.inputData);
+    renderStateIO(appData.renderData, appData.gameState);
+}
+
+function startGameLoopIO(appData) {
+    if (!appData.gameLoopId) {
+        appData.gameLoopId = setInterval(function () {
+            gameLoopIO(appData);
+        }, 1000 / 60); // Set the desired frame rate (e.g., 60 FPS)
+    }
+}
+
 // Module entryPoint
 
 
 
-const allGameData = initGameIO(appData);
+
+initGameIO(appData);
+startGameLoopIO(appData);
 // startGameLoopIO(allGameData);
 
+});
+});
 });
 });

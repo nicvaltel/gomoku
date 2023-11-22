@@ -17,7 +17,7 @@ import Types
 
 
 type AppData = 
-  { connConfig :: ConnectionConfig,
+  { connConf :: ConnectionConfig,
     updateCookieFlag :: Boolean
   }
 
@@ -44,8 +44,8 @@ handshakeSendData uId userRegOrAnon pwd cId
 
 
 processLoginLogoutMsg :: AppData -> LoginLogoutMsg -> Tuple AppData String
-processLoginLogoutMsg appData AskForExistingUser = Tuple appData (encodeWebSocketInputMessage $ HandshakeInMsg $ handshakeSendData appData.connConfig.userId appData.connConfig.userRegOrAnon appData.connConfig.tempAnonPasswd appData.connConfig.connId)
-  -- case appData.connConfig.userId of
+processLoginLogoutMsg appData AskForExistingUser = Tuple appData (encodeWebSocketInputMessage $ HandshakeInMsg $ handshakeSendData appData.connConf.userId appData.connConf.userRegOrAnon appData.connConf.tempAnonPasswd appData.connConf.connId)
+  -- case appData.connConf.userId of
   --   "" -> Tuple appData (encodeWebSocketInputMessage $ HandshakeInMsg $ ExistingAnonConn "666" "666" "Hello, Password!")
   --   uId -> Tuple appData (encodeWebSocketInputMessage $ HandshakeInMsg $ ExistingAnonConn uId "999" "HELLO, DARLING!")
 processLoginLogoutMsg appData RegisterError = Tuple appData ""
@@ -54,8 +54,8 @@ processLoginLogoutMsg appData LoginError = Tuple appData ""
 processLoginLogoutMsg appData (LoginSuccessfully userId connId) = Tuple appData ""
 processLoginLogoutMsg appData (LogoutSuccessfully userId connId) = Tuple appData ""
 processLoginLogoutMsg appData (NewAnonUser userId connId passwd) =
-  let newConnConfig = appData.connConfig {userId = userId, connId = connId, tempAnonPasswd = passwd, userRegOrAnon = "AnonUser"}
-  in Tuple appData{ connConfig = newConnConfig, updateCookieFlag = true} ""
+  let newConnConf = appData.connConf {userId = userId, connId = connId, tempAnonPasswd = passwd, userRegOrAnon = "AnonUser"}
+  in Tuple appData{ connConf = newConnConf, updateCookieFlag = true} ""
 processLoginLogoutMsg appData (OldAnonUser userId connId) = Tuple appData "" -- that's correct
 
 messageProcessor ::  AppData -> String -> Tuple AppData String
